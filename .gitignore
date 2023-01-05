@@ -1,5 +1,14 @@
+# ROOT
+*.pcm
+ROOT
+root_helpers.py
+
 # Prerequisites
 *.d
+
+# Notebook checkpoint
+*/.ipynb_checkpoints
+*/__pycache__
 
 # Compiled Object files
 *.slo

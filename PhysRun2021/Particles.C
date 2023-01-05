@@ -152,7 +152,7 @@ RVec<double> get_vec_phi(RVec<double> px, RVec<double> py, RVec<double> pz){
     return out;
 }
 
-RVec<bool> fiducial_cut(RVec<int> ix, RVec<int> iy){
+RVec<bool> fiducial_cut_X(RVec<int> ix, RVec<int> iy){
     RVec<bool> out;
     for(size_t i=0;i< ix.size();++i){
         if( ix[i]>=-22 && ix[i]<=22 &&
@@ -166,6 +166,26 @@ RVec<bool> fiducial_cut(RVec<int> ix, RVec<int> iy){
     }
     return out;
 }
+
+RVec<bool> fiducial_cut(RVec<int> ix, RVec<int> iy){
+    RVec<bool> out;
+    for(size_t i=0;i< ix.size();++i){
+        if(
+           !(ix[i] <= -23 || ix[i] >= 23) && /* Cut out the left and right side */
+           !(iy[i] <= -6 || iy[i] >= 6)   && /* Cut out the top and bottom row */
+           !(iy[i] >= -1 && iy[i] <= 1)   && /* Cut out the first row around the gap */
+           !(iy[i] >= -2 && iy[i] <= 2 && ix[i] >= -11 && ix[i] <= 1)
+        )
+        {
+            out.push_back(true);
+        }else{
+            out.push_back(false);
+        }
+    }
+    return out;
+}
+
+
 
 RVec<bool> fiducial_cut_top(RVec<int> ix, RVec<int> iy){
     RVec<bool> out;
