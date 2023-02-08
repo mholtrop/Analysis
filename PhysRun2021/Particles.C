@@ -26,10 +26,30 @@ using namespace ROOT;
 using namespace ROOT::RDF;
 using namespace ROOT::VecOps;
 
+//
+// This code is needed to generate dictionaries for the RVec<vector<type>> vector of vectors.
+// These RVec<> are needed because they interface with Python and Numpy, where just plain vector<> does not.
+// The vector of vectors are not pre-defined, where the vectors of primitives are.
+//
+#include <vector>
+#ifdef __CLING__
+#pragma link C++ nestedtypedefs;
+#pragma link C++ class ROOT::VecOps::RVec<vector<int>>+;
+#pragma link C++ class ROOT::VecOps::RVec<vector<int>>::*+;
+#pragma link C++ class ROOT::VecOps::RVec<ROOT::VecOps::RVec<int>>+;
+#pragma link C++ class ROOT::VecOps::RVec<ROOT::VecOps::RVec<int>>::*+;
+#pragma link C++ class ROOT::VecOps::RVec<vector<double>>+;
+#pragma link C++ class ROOT::VecOps::RVec<vector<double>>::*+;
+#pragma link C++ class ROOT::VecOps::RVec<ROOT::VecOps::RVec<double>>+;
+#pragma link C++ class ROOT::VecOps::RVec<ROOT::VecOps::RVec<double>>::*+;
+#pragma link C++ class ROOT::VecOps::RVec<vector<bool>>+;
+#pragma link C++ class ROOT::VecOps::RVec<vector<bool>>::*+;
+#endif
+
 int    Debug = 0;
 
 string Particles(void){
-    return("Particles analysis. V1.0.1 \n");
+    return("Particles analysis. V1.0.3 \n");
 }
 
 int count_true(RVec<bool> inarr){
@@ -216,3 +236,34 @@ RVec<bool> fiducial_cut_bot(RVec<int> ix, RVec<int> iy){
     }
     return out;
 }
+
+Double_t fit_gaus_tail(Double_t *x, Double_t *par){
+// A function for fitting a Gaussian with an exponential tail on the high side.
+    Double_t mu = par[1];
+    Double_t sigma = par[2];
+    Double_t lamb = par[3];
+    Double_t arg = 0;
+
+    if(sigma< 0) return 0;
+    Double_t ex = lamb/2*(2*(mu - x[0]) + lamb*sigma*sigma);
+    Double_t er = (mu - x[0] + lamb*sigma*sigma)/(sqrt(2)*sigma);
+    Double_t f = par[0]*lamb/2*exp(ex)*erfc(er);
+    return f;
+}
+
+Double_t fit_gaus_tailn(Double_t *x, Double_t *par){
+// A function for fitting a Gaussian with an exponential tail on the low side.
+    Double_t mu = par[1];
+    Double_t sigma = par[2];
+    Double_t lamb = par[3];
+    Double_t arg = 0;
+
+    if(sigma< 0) return 0;
+    Double_t ex = lamb/2*(2*(x[0] - mu) + lamb*sigma*sigma);
+    Double_t er = (x[0]-mu + lamb*sigma*sigma)/(sqrt(2)*sigma);
+    Double_t f = par[0]*lamb/2*exp(ex)*erfc(er);
+    return f;
+}
+
+//TF1 *fit_function1 = new TF1("fit_function1",&fit_gaus_tailn,1.,5.,4);
+//TF1 *fit_function2 = new TF1("fit_function2",&fit_gaus_tailn,1.,5.,4);
