@@ -1,11 +1,10 @@
 import ROOT as R
-import numpy as np
-from root_helpers import SetStyle
+
 R.EnableImplicitMT()
 import os
 recompile = True
 try:
-    if os.path.getmtime('Particles_C.so') - os.path.getmtime('Particles.C') > 0:
+    if os.path.getmtime('Particles_C.so') - os.path.getmtime('../Python/Particles.C') > 0:
         recompile = False
         print("Recompile is not needed")
     else:
