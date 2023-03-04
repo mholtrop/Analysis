@@ -48,8 +48,95 @@ using namespace ROOT::VecOps;
 
 int    Debug = 0;
 
-string Particles(void){
-    return("Particles analysis. V1.0.3 \n");
+string Utility_Functions(void){
+    return("Utility Functions V1.0.4 \n");
+}
+
+bool is_in_fiducial_region(int ix, int iy){
+    return(
+          !(ix <= -23 || ix >= 23) && /* Cut out the left and right side */
+               !(iy <= -5  || iy >= 5)  && /* Cut out the top and bottom row */
+               !(iy >= -1  && iy <= 1)  && /* Cut out the first row around the gap */
+               !(iy >= -2  && iy <= 2   && ix >= -11 && ix <= -1)  /* Cut around the photon hole */
+        );
+}
+
+bool is_in_fiducial_region_extended(int ix, int iy, vector< pair<int,int> > exclude){
+    if( !is_in_fiducial_region(ix,iy) ){
+        return false;
+    }
+    for(const auto& cc : exclude) {
+        if( ix >= cc.first-1 && ix <= cc.first+1 && iy >= cc.second-1 && iy <= cc.second +1){
+        // ix,iy is within the 3x3 exclusion zone for this crystal.
+            return false;
+        }
+        // This is where the decision to skip ix==0 bites. If first==1 then first-2 should be excluded too,
+        // same for first==-1, then first+2 should be excluded.
+        if( cc.first == 1 && ix == -1 && iy >= cc.second-1 && iy <= cc.second +1) return false;
+        if( cc.first == -1 && ix == 1 && iy >= cc.second-1 && iy <= cc.second +1) return false;
+    }
+    return true;
+
+}
+
+RVec<int> find_index_primary_mc_part(RVec<double> mc_part_z){
+    RVec<int> out;
+    for(size_t i=0;i< mc_part_z.size(); ++i){
+        if( mc_part_z[i]<= 0.001) out.push_back(i);
+    }
+    return out;
+}
+
+RVec<double> find_end_z_of_primary_mc_part(RVec<double> mc_part_z, RVec<double> mc_part_end_z){
+    RVec<int> idxs = find_index_primary_mc_part(mc_part_z);
+    RVec<double> out;
+    for(int i: idxs){
+        out.push_back(mc_part_end_z[i]);
+    }
+    return out;
+}
+
+RVec<double> find_average_end_of_daughters_of_primary_mc_part(RVec<double> mc_part_z, RVec<double> mc_part_end_z, RVec< std::vector<int> > mc_part_daughters){
+    /// Find the average z endpoint of all the daughters of the primary particles. If the primary has no daughters then return its endpoint.
+    RVec<int> idxs = find_index_primary_mc_part(mc_part_z);
+    RVec<double> out;
+    for(int i: idxs){
+        if( mc_part_daughters[i].size() > 0){
+            double ave = 0;
+            for(int ii: mc_part_daughters[i]){
+                ave += mc_part_end_z[ii];
+            }
+            ave = ave/mc_part_daughters[i].size();
+            out.push_back(ave);
+        }else{
+            out.push_back(mc_part_end_z[i]);
+        }
+    }
+    return out;
+}
+
+RVec<bool> fiducial_cut(RVec<int> ix, RVec<int> iy){
+    RVec<bool> out;
+    for(size_t i=0;i< ix.size();++i){
+        if( is_in_fiducial_region(ix[i], iy[i])){
+            out.push_back(true);
+         }else{
+            out.push_back(false);
+         }
+    }
+    return out;
+}
+
+RVec<bool> fiducial_cut_extended(RVec<int> ix, RVec<int> iy, vector< pair<int,int> > exclude){
+    RVec<bool> out;
+    for(size_t i=0;i< ix.size();++i){
+        if(is_in_fiducial_region_extended(ix[i], iy[i], exclude)){
+            out.push_back(true);
+         }else{
+            out.push_back(false);
+         }
+    }
+    return out;
 }
 
 int count_true(RVec<bool> inarr){
@@ -178,56 +265,6 @@ RVec<bool> fiducial_cut_X(RVec<int> ix, RVec<int> iy){
         if( ix[i]>=-22 && ix[i]<=22 &&
           ( ( iy[i]>=2 && iy[i]<=4  ) ||
             (iy[i]>=-4 && iy[i]<=-2 )))
-        {
-            out.push_back(true);
-        }else{
-            out.push_back(false);
-        }
-    }
-    return out;
-}
-
-RVec<bool> fiducial_cut(RVec<int> ix, RVec<int> iy){
-    RVec<bool> out;
-    for(size_t i=0;i< ix.size();++i){
-        if(
-           !(ix[i] <= -23 || ix[i] >= 23) && /* Cut out the left and right side */
-           !(iy[i] <= -6 || iy[i] >= 6)   && /* Cut out the top and bottom row */
-           !(iy[i] >= -1 && iy[i] <= 1)   && /* Cut out the first row around the gap */
-           !(iy[i] >= -2 && iy[i] <= 2 && ix[i] >= -11 && ix[i] <= 1)
-        )
-        {
-            out.push_back(true);
-        }else{
-            out.push_back(false);
-        }
-    }
-    return out;
-}
-
-
-
-RVec<bool> fiducial_cut_top(RVec<int> ix, RVec<int> iy){
-    RVec<bool> out;
-    for(size_t i=0;i< ix.size();++i){
-        if( ix[i]>=-22 && ix[i]<=22 &&
-            iy[i]>=2 && iy[i]<=4
-          )
-        {
-            out.push_back(true);
-        }else{
-            out.push_back(false);
-        }
-    }
-    return out;
-}
-
-RVec<bool> fiducial_cut_bot(RVec<int> ix, RVec<int> iy){
-    RVec<bool> out;
-    for(size_t i=0;i< ix.size();++i){
-        if( ix[i]>=-22 && ix[i]<=22 &&
-            iy[i]>=-4 && iy[i]<=-2
-          )
         {
             out.push_back(true);
         }else{
