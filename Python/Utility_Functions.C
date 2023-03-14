@@ -115,6 +115,170 @@ RVec<double> find_average_end_of_daughters_of_primary_mc_part(RVec<double> mc_pa
     return out;
 }
 
+RVec<double> score_plane_hit_energy(RVec<int> type, RVec<double> px, RVec<double> py, RVec<double> pz,
+                                                    RVec<double> x, RVec<double> y, RVec<double> z){
+    // Find the summed energies of particles that are closer than 20mm crossing the ECal scoring plane.
+    RVec<double> out;
+    vector<int> already_used(type.size(), false);
+    bool done = false;
+    while( !done){
+        double max_pz = 0;
+        double e_sum=0;
+        int i_max=0;
+        // Find any next max pz
+        for(size_t ii=0; ii<type.size(); ++ii){
+            if( !already_used[ii] && z[ii]>= 1440 && pz[ii]>0.05){
+                if(pz[ii] > max_pz){
+                    i_max = ii;
+                    max_pz = pz[ii];
+                }
+            }else{
+                already_used[ii] = true; // don't want to see them again.
+            }
+        }
+        already_used[i_max] = true;
+        e_sum = sqrt(px[i_max]*px[i_max]+py[i_max]*py[i_max]+pz[i_max]*pz[i_max]);
+        // Find crossing with pz>0.1
+        for(size_t j=0; j<type.size(); ++j){
+            if( !already_used[j] && z[j]>= 1440 && pz[j]>0.01 && abs(x[i_max] - x[j])<=20 && abs(y[i_max]- y[j]) <= 20){
+                e_sum += sqrt(px[j]*px[j]+py[j]*py[j]+pz[j]*pz[j]);
+                already_used[j] = true;
+            }
+        }
+        out.push_back(e_sum);
+
+        int count_used = 0;
+        for(size_t i=0; i< type.size(); ++i){
+            if(already_used[i]) count_used++;
+        }
+        if( count_used == (int)type.size()) done = true;
+    }
+    return out;
+}
+
+RVec<double> score_plane_hit_x(RVec<int> type, RVec<double> px, RVec<double> py, RVec<double> pz,
+                                                    RVec<double> x, RVec<double> y, RVec<double> z){
+    // Find the summed energies of particles that are closer than 20mm crossing the ECal scoring plane.
+    RVec<double> out;
+    vector<int> already_used(type.size(), false);
+    bool done = false;
+    while( !done){
+        double max_pz = 0;
+        double e_sum=0;
+        double x_ave=0;
+        int i_max=0;
+        // Find any next max pz
+        for(size_t ii=0; ii<type.size(); ++ii){
+            if( !already_used[ii] && z[ii]>= 1440 && pz[ii]>0.05){
+                if(pz[ii] > max_pz){
+                    i_max = ii;
+                    max_pz = pz[ii];
+                }
+            }else{
+                already_used[ii] = true; // don't want to see them again.
+            }
+        }
+        already_used[i_max] = true;
+        e_sum = sqrt(px[i_max]*px[i_max]+py[i_max]*py[i_max]+pz[i_max]*pz[i_max]);
+        x_ave = x[i_max]*e_sum;
+        // Find crossing with pz>0.1
+        for(size_t j=0; j<type.size(); ++j){
+            if( !already_used[j] && z[j]>= 1440 && pz[j]>0.01 && abs(x[i_max] - x[j])<=20 && abs(y[i_max]- y[j]) <= 20){
+                double en = sqrt(px[j]*px[j]+py[j]*py[j]+pz[j]*pz[j]);
+                e_sum += en;
+                x_ave += x[j]*en;
+                already_used[j] = true;
+            }
+        }
+
+        x_ave = x_ave/e_sum;
+        out.push_back(x_ave);
+
+        int count_used = 0;
+        for(size_t i=0; i< type.size(); ++i){
+            if(already_used[i]) count_used++;
+        }
+        if( count_used == (int)type.size()) done = true;
+    }
+    return out;
+}
+
+RVec<double> score_plane_hit_y(RVec<int> type, RVec<double> px, RVec<double> py, RVec<double> pz,
+                                                    RVec<double> x, RVec<double> y, RVec<double> z){
+    // Find the summed energies of particles that are closer than 20mm crossing the ECal scoring plane.
+    RVec<double> out;
+    vector<int> already_used(type.size(), false);
+    bool done = false;
+    while( !done){
+        double max_pz = 0;
+        double e_sum=0;
+        double y_ave=0;
+        int i_max=0;
+        // Find any next max pz
+        for(size_t ii=0; ii<type.size(); ++ii){
+            if( !already_used[ii] && z[ii]>= 1440 && pz[ii]>0.05){
+                if(pz[ii] > max_pz){
+                    i_max = ii;
+                    max_pz = pz[ii];
+                }
+            }else{
+                already_used[ii] = true; // don't want to see them again.
+            }
+        }
+        already_used[i_max] = true;
+        e_sum = sqrt(px[i_max]*px[i_max]+py[i_max]*py[i_max]+pz[i_max]*pz[i_max]);
+        y_ave = y[i_max]*e_sum;
+        // Find crossing with pz>0.1
+        for(size_t j=0; j<type.size(); ++j){
+            if( !already_used[j] && z[j]>= 1440 && pz[j]>0.01 && abs(x[i_max] - x[j])<=20 && abs(y[i_max]- y[j]) <= 20){
+                double en = sqrt(px[j]*px[j]+py[j]*py[j]+pz[j]*pz[j]);
+                e_sum += en;
+                y_ave += y[j]*en;
+                already_used[j] = true;
+            }
+        }
+
+        y_ave = y_ave/e_sum;
+        out.push_back(y_ave);
+
+        int count_used = 0;
+        for(size_t i=0; i< type.size(); ++i){
+            if(already_used[i]) count_used++;
+        }
+        if( count_used == (int)type.size()) done = true;
+    }
+    return out;
+}
+
+
+
+RVec<double> score_plane_hit_energy2(RVec<int> type, RVec<double> px, RVec<double> py, RVec<double> pz,
+                                                    RVec<double> x, RVec<double> y, RVec<double> z){
+    // Find the summed energies of particles that are closer than 20mm crossing the ECal scoring plane.
+    RVec<double> out;
+    vector<int> already_used(type.size(), false);
+    for(size_t i=0; i<type.size(); ++i){
+        double e_sum=0;
+        // Find crossing with pz>0.1
+        if( !already_used[i] && z[i]>= 1440 && pz[i]>0.05){
+            e_sum = sqrt(px[i]*px[i]+py[i]*py[i]+pz[i]*pz[i]);
+            already_used[i] = true;
+            for(size_t j=0; j<type.size(); ++j){
+                if(z[j]>= 1440 && pz[j]>0.01)
+                    printf("[%2zu, %2zu]  pz: %7.3f  dx: %7.4f  dy: %7.4f \n" ,i, j, pz[j],abs(x[i] - x[j]), abs(y[i]- y[j]) );
+                if( !already_used[j] && z[j]>= 1440 && pz[j]>0.01 && abs(x[i] - x[j])<=20 && abs(y[i]- y[j]) <= 20){
+                    e_sum += sqrt(px[j]*px[j]+py[j]*py[j]+pz[j]*pz[j]);
+                    cout << "added. Sum = " << e_sum << "\n";
+                    already_used[j] = true;
+                }
+            }
+            out.push_back(e_sum);
+        }
+    }
+    return out;
+}
+
+
 RVec<bool> fiducial_cut(RVec<int> ix, RVec<int> iy){
     RVec<bool> out;
     for(size_t i=0;i< ix.size();++i){
@@ -276,6 +440,7 @@ RVec<bool> fiducial_cut_X(RVec<int> ix, RVec<int> iy){
 
 Double_t fit_gaus_tail(Double_t *x, Double_t *par){
 // A function for fitting a Gaussian with an exponential tail on the high side.
+//
     Double_t mu = par[1];
     Double_t sigma = par[2];
     Double_t lamb = par[3];
@@ -304,3 +469,67 @@ Double_t fit_gaus_tailn(Double_t *x, Double_t *par){
 
 //TF1 *fit_function1 = new TF1("fit_function1",&fit_gaus_tailn,1.,5.,4);
 //TF1 *fit_function2 = new TF1("fit_function2",&fit_gaus_tailn,1.,5.,4);
+
+#include "TMath.h"
+/// From:
+///  https://root.cern.ch/doc/master/langaus_8C_source.html
+/// -------
+/// Convoluted Landau and Gaussian Fitting Function
+///         (using ROOT's Landau and Gauss functions)
+///
+///  Based on a Fortran code by R.Fruehwirth (fruhwirth@hephy.oeaw.ac.at)
+///
+double langaufun(double *x, double *par) {
+
+   //Fit parameters:
+   //par[0]=Width (scale) parameter of Landau density
+   //par[1]=Most Probable (MP, location) parameter of Landau density
+   //par[2]=Total area (integral -inf to inf, normalization constant)
+   //par[3]=Width (sigma) of convoluted Gaussian function
+   //
+   //In the Landau distribution (represented by the CERNLIB approximation),
+   //the maximum is located at x=-0.22278298 with the location parameter=0.
+   //This shift is corrected within this function, so that the actual
+   //maximum is identical to the MP parameter.
+
+      // Numeric constants
+      double invsq2pi = 0.3989422804014;   // (2 pi)^(-1/2)
+      double mpshift  = -0.22278298;       // Landau maximum location
+
+      // Control constants
+      double np = 100.0;      // number of convolution steps
+      double sc =   5.0;      // convolution extends to +-sc Gaussian sigmas
+
+      // Variables
+      double xx;
+      double mpc;
+      double fland;
+      double sum = 0.0;
+      double xlow,xupp;
+      double step;
+      double i;
+
+
+      // MP shift correction
+      mpc = par[1] - mpshift * par[0];
+
+      // Range of convolution integral
+      xlow = x[0] - sc * par[3];
+      xupp = x[0] + sc * par[3];
+
+      step = (xupp-xlow) / np;
+
+      // Convolution integral of Landau and Gaussian by sum
+      for(i=1.0; i<=np/2; i++) {
+         xx = xlow + (i-.5) * step;
+         fland = TMath::Landau(xx,mpc,par[0]) / par[0];
+         sum += fland * TMath::Gaus(x[0],xx,par[3]);
+
+         xx = xupp - (i-.5) * step;
+         fland = TMath::Landau(xx,mpc,par[0]) / par[0];
+         sum += fland * TMath::Gaus(x[0],xx,par[3]);
+      }
+
+      return (par[2] * step * sum * invsq2pi / par[3]);
+}
+

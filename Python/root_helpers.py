@@ -9,7 +9,11 @@ def print_daughters(mdst, i_part, indent=0):
         ident  -- the amount of indentation of the output.
     """
 
-    print(" "*indent+f" {i_part:3d}  pdg: {mdst.mc_part_pdg_id[i_part]:4d}  E: {mdst.mc_part_energy[i_part]:9.6f} " +
+    if mdst.mc_part_pdg.size() > 0:
+        part_pdg = mdst.mc_part_pdg[i_part]
+    else:
+        part_pdg = 0
+    print(" "*indent+f" {i_part:3d}  pdg: {part_pdg:4d}  E: {mdst.mc_part_energy[i_part]:9.6f} " +
           f"p = ({mdst.mc_part_px[i_part]:9.6f},{mdst.mc_part_py[i_part]:9.6f},{mdst.mc_part_pz[i_part]:9.6f})" +
           f"v = ({mdst.mc_part_x[i_part]:5.2f},{mdst.mc_part_y[i_part]:5.2f},{mdst.mc_part_z[i_part]:5.2f}) " +
           f"end=({mdst.mc_part_end_x[i_part]:5.2f},{mdst.mc_part_end_y[i_part]:5.2f},{mdst.mc_part_end_z[i_part]:5.2f})")
@@ -83,31 +87,31 @@ def fancy_plot(histo, ones_lb, opt=0):
     else:
         ones_lb.Clear()
 
-    if opt& 0x4 ==0:
-        histo.SetMaximum();
+    if opt & 0x4 == 0:
+        histo.SetMaximum()
     if histo.GetMaximum() < 1:
         histo.SetMaximum(1.1)
 
     if opt & 0x6 == 0:
         histo.SetStats(0)
 
-    SetMax=histo.GetMaximum()
-    if SetMax<1.1:
-        SetMax=1.1
+    SetMax = histo.GetMaximum()
+    if SetMax < 1.1:
+        SetMax = 1.1
 
-    xax=ones_lb.GetXaxis();
-    yax=ones_lb.GetYaxis();
+    xax=ones_lb.GetXaxis()
+    yax=ones_lb.GetYaxis()
 
     # this chunk of code just puts the grid in the right place
     for i in range(ecal_nx):
         for j in range(ecal_ny):
-            ones_lb.SetBinContent(xax.FindBin(ecal_x_first+i),yax.FindBin(ecal_y_first+j),1)
-            ones_lb.SetBinContent(xax.FindBin(ecal_x_first+i),yax.FindBin(ecal_ny_first-j),1)
-            if (j==0 and 0 < i < 10) or i==0:
+            ones_lb.SetBinContent(xax.FindBin(ecal_x_first+i), yax.FindBin(ecal_y_first+j), 1)
+            ones_lb.SetBinContent(xax.FindBin(ecal_x_first+i), yax.FindBin(ecal_ny_first-j), 1)
+            if j == 0 and 0 < i < 10:
                 pass
             else:
-                ones_lb.SetBinContent(xax.FindBin(ecal_nx_first-i),yax.FindBin(ecal_ny_first-j),1)
-                ones_lb.SetBinContent(xax.FindBin(ecal_nx_first-i),yax.FindBin(ecal_y_first+j),1)
+                ones_lb.SetBinContent(xax.FindBin(ecal_nx_first-i), yax.FindBin(ecal_ny_first-j), 1)
+                ones_lb.SetBinContent(xax.FindBin(ecal_nx_first-i), yax.FindBin(ecal_y_first+j), 1)
 
     ones_lb.Scale(SetMax) # scale them so the boxes are big enough
     # draw stuff
