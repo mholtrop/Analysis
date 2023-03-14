@@ -1,6 +1,10 @@
 # ROOT
 *.pcm
+*.root
 ROOT
+
+# Output
+*.pdf
 
 
 # Prerequisites
