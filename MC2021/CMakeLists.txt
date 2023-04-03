@@ -65,4 +65,8 @@ target_include_directories(${PROJECT_NAME} PUBLIC $<BUILD_INTERFACE:${PROJECT_SO
 target_link_libraries(${PROJECT_NAME} PUBLIC ${ROOT_LIBRARIES})
 set_target_properties(${PROJECT_NAME} PROPERTIES PUBLIC_HEADER "${Ecal_Analysis_PUBLIC_HEADERS}")
 
+add_executable(debug_main debug_main.cxx)
+target_include_directories(debug_main PUBLIC /data/HPS/include)
+target_link_libraries(debug_main MC2021 -L/data/HPS/lib -lMiniDST)
+
 install(TARGETS ${PROJECT_NAME} DESTINATION ${CMAKE_INSTALL_LIBDIR} PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCDIR} )

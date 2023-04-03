@@ -54,6 +54,8 @@ using RNode = ROOT::RDF::RNode;
 class Ecal_Analysis_Class {
 
 public:
+
+   bool   mc_score_indexes_are_sorted = true;
    vector< pair<int,int> > fiducial_cut_exclude;
    double mc_score_z_position_cut = 1400;
    double mc_score_pz_cut = 0.01;
@@ -63,7 +65,7 @@ public:
    // crystal_factors = [0.06600114645748535,0.06600114778752586,0.0665927423975814,0.06659274408814787]
 
 public:
-   string Version(){ return "V1.0.4";}
+   string Version(){ return "V1.0.8";}
 
    // Note: I tried templating this, with instantiations to make the templates resolve. This works at the root prompt,
    // but in Python it could not resolve the correct template. Given that the RNode is a "wicked" complicated item, we just overload.
@@ -72,25 +74,29 @@ public:
    // it up. Instead for Python, call this method with: dfx = EAC.extend_dataframe(R.RDF.AsRNode(df))
    RNode extend_dateframe(RDataFrame in){ return extend_dataframe( (RNode)(in));}
 
-   vector< vector<int> > get_score_cluster_indexes( vector<double> mc_score_pz,
-         vector<double> mc_score_x, vector<double> mc_score_y, vector<double> mc_score_z);
+   vector< vector<int> > get_score_cluster_indexes( vector<double> &mc_score_pz,
+         vector<double> &mc_score_x, vector<double> &mc_score_y, vector<double> &mc_score_z,
+         vector<double> &ecal_cluster_x, vector<double> &ecal_cluster_y);
 
-   vector< double > get_score_cluster_loc(vector< vector<int> > indexes, vector<double> mc_score_x, vector<double> mc_score_pz);
-   vector< double > get_score_cluster_pz(vector< vector<int> > indexes, vector<double> mc_score_pz);
-   vector< double > get_score_cluster_e(vector< vector<int> > indexes,
-                                      vector<double> mc_score_px, vector<double> mc_score_py, vector<double> mc_score_pz);
+   vector< double > get_score_cluster_loc(vector< vector<int> > &indexes, vector<double> &mc_score_x, vector<double> &mc_score_pz);
+   vector< double > get_score_cluster_pz(vector< vector<int> > &indexes, vector<double> &mc_score_pz);
+   vector< double > get_score_cluster_e(vector< vector<int> > &indexes,
+                                      vector<double> &mc_score_px, vector<double> &mc_score_py, vector<double> &mc_score_pz);
 
    static vector<int> get_list_of_primary_mc(vector<double> &part_z);
+   static vector<int> get_list_of_primary_mc(vector<int> &mc_part_sim_status);
    static vector<int> get_list_of_all_secondary_mc(vector<double> &part_z);
-   vector<int> get_centers_of_scored_secondary_mc(vector<double> &part_z, vector<int> &mc_score_part_idx, vector<double> &mc_score_x,
+   static vector<int> get_list_of_all_secondary_mc(vector<int> &mc_part_sim_status);
+
+   vector<int> get_centers_of_scored_secondary_mc(vector<int> &mc_part_sim_status, vector<int> &mc_score_part_idx, vector<double> &mc_score_x,
                                                     vector<double> &mc_score_y, vector<double> &mc_score_z, vector<double> &mc_score_pz) const;
-   vector<double> get_score_primary_hits_energy(vector<double> &mc_part_z, vector<int> &mc_score_part_idx, vector<double> &mc_score_z,
+   vector<double> get_score_primary_hits_energy(vector<int> &mc_part_sim_status, vector<int> &mc_score_part_idx, vector<double> &mc_score_z,
                                               vector<double> &mc_score_px, vector<double> &mc_score_py, vector<double> &mc_score_pz);
-   vector<double> get_score_secondary_hits_energy(vector<double> &mc_part_z, vector<int> &mc_score_part_idx, vector<double> &mc_score_z,
+   vector<double> get_score_secondary_hits_energy(vector<int> &mc_part_sim_status, vector<int> &mc_score_part_idx, vector<double> &mc_score_z,
                                               vector<double> &mc_score_px, vector<double> &mc_score_py, vector<double> &mc_score_pz);
-   vector<int> get_score_n_primary_hits(vector<double> &mc_part_z, vector<int> &mc_score_part_idx, vector<double> &mc_score_z, vector<double> &mc_score_pz) const;
-   vector<int> get_score_n_secondary_hits(vector<double> &mc_part_z, vector<int> &mc_score_part_idx, vector<double> &mc_score_z, vector<double> &mc_score_pz) const;
-   inline static bool ficucial_cut_test(int ix, int iy){  /// Test if ix and iy are in basic fiducial region.
+   vector<int> get_score_n_primary_hits(vector<int> &mc_part_sim_status, vector<int> &mc_score_part_idx, vector<double> &mc_score_z, vector<double> &mc_score_pz) const;
+   vector<int> get_score_n_secondary_hits(vector<int> &mc_part_sim_staus, vector<int> &mc_score_part_idx, vector<double> &mc_score_z, vector<double> &mc_score_pz) const;
+   inline static bool fiducial_cut_test(int ix, int iy){  /// Test if ix and iy are in basic fiducial region.
       return !(ix <= -23 || ix >= 23) && /* Cut out the left and right side */
              !(iy <= -6 || iy >= 6)   && /* Cut out the top and bottom row */
              !(iy >= -1 && iy <= 1)   && /* Cut out the first row around the gap */
@@ -100,9 +106,17 @@ public:
   void fiducial_cut_add_bad_crystal(int ix, int iy){  /// Add bad crystal to fiducial cut list.
       fiducial_cut_exclude.push_back( {ix, iy});
    }
-
-   static vector<bool> fiducial_cut(vector<int> ix, vector<int> iy); /// Fiducial cut for basic fiducial region.
-   vector<bool> fiducial_cut_extended(vector<int> ix, vector<int> iy);  /// Fiducial cut extended with bad crystals from list.
+   /// Note:
+   /// A bit of a hassle, but, when calling a function with RDataFrame columns, in C++ these are vector<> type,
+   /// In Python, because of the PyROOT interface, these functions are called with RVec<> type. C++ will not convert one
+   /// to another automatically, so we need to overload and have both functions. The following pair allows for:
+   /// df.Define("fid_cut_result",fiducial_cut,{"ecal_cluster_seed_ix","ecal_cluster_seed_iy"); // From C++, uses vector<>
+   /// df.Define("fid_cut_result","EAC.fiducial_cut(ecal_cluster_seed_ix,ecal_cluster_seed_iy)") // From Python, uses RVec<>
+   ///
+   static vector<bool> fiducial_cut(vector<int> &ix, vector<int> &iy); /// Fiducial cut for basic fiducial region.
+   static RVec<bool> fiducial_cut(RVec<int> ix, RVec<int> iy); /// Fiducial cut for basic fiducial region, for RVec's
+   vector<bool> fiducial_cut_extended(vector<int> &ix, vector<int> &iy);  /// Fiducial cut extended with bad crystals from list.
+   RVec<int> fiducial_cut_extended(RVec<int> &ix, RVec<int> &iy);  /// RVec version
 
    static double ecal_xpos_to_index(double xpos);
    static double ecal_ypos_to_index(double ypos);
