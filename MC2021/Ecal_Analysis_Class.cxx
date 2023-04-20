@@ -3,6 +3,11 @@
 #include "Ecal_Analysis_Class.h"
 #include <iostream>
 
+RNode Ecal_Analysis_Class::dataframe_for_ml(RNode in) {
+   /// Return a dataframe that is "flattened" for use in ML systems.
+   /// This will only return some of the ECAL and Score plane data.
+}
+
 RNode Ecal_Analysis_Class::extend_dataframe(RNode in){
    /// Return a dataframe with additional columns
 
@@ -135,12 +140,12 @@ vector< vector<int> > Ecal_Analysis_Class::get_score_cluster_indexes(
          }
       }
 
-      vector<bool> alread_used(d, false);
+      vector<bool> already_used(d, false);
       for (size_t i = 0; i < w; ++i) {
          double min_dist = 10000000000000.;
          int min_j = -1;
          for (size_t j = 0; j < d; ++j) {
-            if (!alread_used[j] && dist_mat[i * d + j] < min_dist) {
+            if (!already_used[j] && dist_mat[i * d + j] < min_dist) {
                bool is_closest = true;
                for (size_t ii = 0; ii < w; ++ii) {  // We need to check if there is another closer match for this j
                   if (dist_mat[ii * d + j] < dist_mat[i * d + j]) {  // Another is closer, so do not use this one.
@@ -155,14 +160,14 @@ vector< vector<int> > Ecal_Analysis_Class::get_score_cluster_indexes(
          }
          // At this point, min_j should contain the closest valid match.
          if( min_j >= 0) {
-            alread_used[min_j] = true;  // Mark it as used.
+            already_used[min_j] = true;  // Mark it as used.
             out_sorted.emplace_back(out[min_j]); // This, unfortunately, copies the vector.
          }else{
             // printf("Strange, min_j = %d for len(out) = %lu at i= %2zu\n",min_j, out.size(), i);
          }
       }
       for (size_t j = 0; j < d; ++j) {   // sweep the remaining "j"'s
-         if (!alread_used[j]) out_sorted.emplace_back(out[j]);
+         if (!already_used[j]) out_sorted.emplace_back(out[j]);
       }
       return out_sorted;
    }else{

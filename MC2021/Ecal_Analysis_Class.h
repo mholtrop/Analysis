@@ -73,6 +73,8 @@ public:
    // This one is useful for C++ code in ROOT prompt, though you could just cast there. Python does not seem to pick
    // it up. Instead for Python, call this method with: dfx = EAC.extend_dataframe(R.RDF.AsRNode(df))
    RNode extend_dateframe(RDataFrame in){ return extend_dataframe( (RNode)(in));}
+   RNode dataframe_for_ml(RNode in);
+   RNode dataframe_for_ml(RDataFrame in){ return dataframe_for_ml( (RNode) in);}
 
    vector< vector<int> > get_score_cluster_indexes( vector<double> &mc_score_pz,
          vector<double> &mc_score_x, vector<double> &mc_score_y, vector<double> &mc_score_z,
