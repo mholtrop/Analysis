@@ -26,6 +26,7 @@ from sklearn.metrics import mean_squared_error
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
+
 class NumpyArrayEncoder(JSONEncoder):
     """This is a helper class deriving from JSONEncoder to help write np.array objects to disk in JSON format.
     The code came from: https://pynative.com/python-serialize-numpy-ndarray-into-json/"""
@@ -58,7 +59,7 @@ def main(argv=None):
     parser.add_argument('-m', '--model', type=int, help="Model to use: 1=Linear, 2=NN2 3=DeepNN, 4=Deep Wide", default=3)
     parser.add_argument('-a', '--alpha', type=float, help="Regularization parameter for the NN.", default=1e-30)
     parser.add_argument('--skipval', action="store_true", help="Skip validation for each step.")
-    parser.add_argument('--save', action="store_true", help="Store model at the end with Keras model.save()")
+    parser.add_argument('-cp', '--checkpoint', type=int, help="Save model json after N epochs.", default=0)
     parser.add_argument('--cont', action="store_true", help="Continue last run with last saved weights.")
     parser.add_argument('--root', action="store_true",
                         help="As a last step, create a ROOT RDataFrame and store to file.")
@@ -269,7 +270,8 @@ def main(argv=None):
     for i_epoc in range(N_epocs):
         for i_split in range(1, len(splits)):
             # Run the model once.
-            print(f"[{i_epoc:2d}.{i_split:2d}] ")
+            if args.debug:
+                print(f"[{i_epoc:2d}.{i_split:2d}] ")
             history = model.fit(dfc_fit.iloc[splits[i_split-1]:splits[i_split]],
                                 dfy_fit.iloc[splits[i_split-1]:splits[i_split]],  verbose=args.debug, epochs=1)
             weights = model.get_weights()
@@ -287,6 +289,14 @@ def main(argv=None):
                 val_mse_store.append(mean_squared_error(Ypred_val, dfy_val.iloc[splits[i_split-1]:splits[i_split]]))
             else:
                 val_mse_store.append(0)
+
+        if args.checkpoint > 0 and (i_epoc+1) % args.checkpoint == 0:
+            if args.debug:
+                print("Storing checkpoint.")
+            outData = {"loss_store": loss_store, "fit_mse_store": fit_mse_store, "val_mse_store": val_mse_store,
+                       "weights_store": weights_store}
+            with open(data_file_name, "w") as f:
+                json.dump(outData, f, cls=NumpyArrayEncoder)
 
     print("Computing non-batched loss:")
     Ypred_val = model.predict(dfc_val, verbose=args.debug)
@@ -320,11 +330,6 @@ def main(argv=None):
         tmp_data['energy_NN'] = Ypred_fit[:, 0]
         rdf_NN = R.RDF.FromNumpy(tmp_data)
         rdf_NN.Snapshot("EcalTraining", data_file_name_root+"_fit.root")
-
-    # This creates a directory where the model is stored.
-    # See https://www.tensorflow.org/guide/keras/save_and_serialize
-    if args.save:
-        model.save(data_file_name_root+"_model")
 
 
 if __name__ == "__main__":
