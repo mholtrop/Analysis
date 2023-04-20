@@ -137,7 +137,7 @@ def main(argv=None):
     if args.model == 1:
         model = keras.Sequential([
             layers.Dense(units=1, activation="linear", input_shape=(7,),
-                         kernel_initializer=tf.keras.initializers.RandomNormal(mean=0.1, stddev=0.01),
+                         kernel_initializer=tf.keras.initializers.RandomNormal(mean=0., stddev=0.01),
                          bias_initializer=tf.keras.initializers.Zeros())
         ])
     elif args.model == 2:
@@ -145,10 +145,10 @@ def main(argv=None):
             model = keras.Sequential([
                 keras.Input(shape=(7,)),
                 layers.Dense(20, activation="linear",
-                             kernel_initializer=tf.keras.initializers.RandomNormal(mean=0.1, stddev=0.01),
+                             kernel_initializer=tf.keras.initializers.RandomNormal(mean=0., stddev=0.01),
                              bias_initializer=tf.keras.initializers.Zeros()),
                 layers.Dense(1, activation="elu",
-                             kernel_initializer=tf.keras.initializers.RandomNormal(mean=0.1, stddev=0.01),
+                             kernel_initializer=tf.keras.initializers.RandomNormal(mean=0., stddev=0.01),
                              bias_initializer=tf.keras.initializers.Zeros(),
                              kernel_regularizer=keras.regularizers.l2(args.alpha))
             ])
@@ -157,10 +157,10 @@ def main(argv=None):
             model = keras.Sequential([
                 keras.Input(shape=(7,)),
                 layers.Dense(20, activation="linear",
-                             kernel_initializer=tf.keras.initializers.RandomNormal(mean=0.1, stddev=0.01),
+                             kernel_initializer=tf.keras.initializers.RandomNormal(mean=0., stddev=0.01),
                              bias_initializer=tf.keras.initializers.Zeros()),
                 layers.Dense(1, activation="elu",
-                             kernel_initializer=tf.keras.initializers.RandomNormal(mean=0.1, stddev=0.01),
+                             kernel_initializer=tf.keras.initializers.RandomNormal(mean=0., stddev=0.01),
                              bias_initializer=tf.keras.initializers.Zeros())
             ])
 
@@ -169,15 +169,15 @@ def main(argv=None):
             model = keras.Sequential([
                 keras.Input(shape=(7,)),
                 layers.Dense(100, activation="elu",
-                             kernel_initializer=tf.keras.initializers.RandomNormal(mean=0.1, stddev=0.01),
+                             kernel_initializer=tf.keras.initializers.RandomNormal(mean=0., stddev=0.01),
                              bias_initializer=tf.keras.initializers.Zeros(),
                              kernel_regularizer=keras.regularizers.l2(args.alpha)),
                 layers.Dense(100, activation="elu",
-                             kernel_initializer=tf.keras.initializers.RandomNormal(mean=0.1, stddev=0.01),
+                             kernel_initializer=tf.keras.initializers.RandomNormal(mean=0., stddev=0.01),
                              bias_initializer=tf.keras.initializers.Zeros(),
                              kernel_regularizer=keras.regularizers.l2(args.alpha)),
                 layers.Dense(1, activation="elu",
-                             kernel_initializer=tf.keras.initializers.RandomNormal(mean=0.1, stddev=0.01),
+                             kernel_initializer=tf.keras.initializers.RandomNormal(mean=0., stddev=0.01),
                              bias_initializer=tf.keras.initializers.Zeros(),
                              kernel_regularizer=keras.regularizers.l2(args.alpha))
             ])
@@ -186,13 +186,13 @@ def main(argv=None):
             model = keras.Sequential([
                 keras.Input(shape=(7,)),
                 layers.Dense(100, activation="elu",
-                             kernel_initializer=tf.keras.initializers.RandomNormal(mean=0.1, stddev=0.01),
+                             kernel_initializer=tf.keras.initializers.RandomNormal(mean=0., stddev=0.01),
                              bias_initializer=tf.keras.initializers.Zeros()),
                 layers.Dense(100, activation="elu",
-                             kernel_initializer=tf.keras.initializers.RandomNormal(mean=0.1, stddev=0.01),
+                             kernel_initializer=tf.keras.initializers.RandomNormal(mean=0., stddev=0.01),
                              bias_initializer=tf.keras.initializers.Zeros()),
                 layers.Dense(1, activation="elu",
-                             kernel_initializer=tf.keras.initializers.RandomNormal(mean=0.1, stddev=0.01),
+                             kernel_initializer=tf.keras.initializers.RandomNormal(mean=0., stddev=0.01),
                              bias_initializer=tf.keras.initializers.Zeros())
             ])
     elif args.model == 4:
@@ -200,23 +200,23 @@ def main(argv=None):
             model = keras.Sequential([
                 keras.Input(shape=(7,)),
                 layers.Dense(460, activation="elu",
-                             kernel_initializer=tf.keras.initializers.RandomNormal(mean=0.1, stddev=0.01),
+                             kernel_initializer=tf.keras.initializers.RandomNormal(mean=0., stddev=0.01),
                              bias_initializer=tf.keras.initializers.Zeros(),
                              kernel_regularizer=keras.regularizers.l2(args.alpha)),
                 layers.Dense(460, activation="elu",
-                             kernel_initializer=tf.keras.initializers.RandomNormal(mean=0.1, stddev=0.01),
+                             kernel_initializer=tf.keras.initializers.RandomNormal(mean=0., stddev=0.01),
                              bias_initializer=tf.keras.initializers.Zeros(),
                              kernel_regularizer=keras.regularizers.l2(args.alpha)),
                 layers.Dense(460, activation="elu",
-                             kernel_initializer=tf.keras.initializers.RandomNormal(mean=0.1, stddev=0.01),
+                             kernel_initializer=tf.keras.initializers.RandomNormal(mean=0., stddev=0.01),
                              bias_initializer=tf.keras.initializers.Zeros(),
                              kernel_regularizer=keras.regularizers.l2(args.alpha)),
                 layers.Dense(460, activation="elu",
-                             kernel_initializer=tf.keras.initializers.RandomNormal(mean=0.1, stddev=0.01),
+                             kernel_initializer=tf.keras.initializers.RandomNormal(mean=0., stddev=0.01),
                              bias_initializer=tf.keras.initializers.Zeros(),
                              kernel_regularizer=keras.regularizers.l2(args.alpha)),
                 layers.Dense(1, activation="elu",
-                             kernel_initializer=tf.keras.initializers.RandomNormal(mean=0.1, stddev=0.01),
+                             kernel_initializer=tf.keras.initializers.RandomNormal(mean=0., stddev=0.01),
                              bias_initializer=tf.keras.initializers.Zeros(),
                              kernel_regularizer=keras.regularizers.l2(args.alpha))
             ])
@@ -225,19 +225,19 @@ def main(argv=None):
             model = keras.Sequential([
                 keras.Input(shape=(7,)),
                 layers.Dense(460, activation="elu",
-                             kernel_initializer=tf.keras.initializers.RandomNormal(mean=0.1, stddev=0.1),
+                             kernel_initializer=tf.keras.initializers.RandomNormal(mean=0., stddev=0.01),
                              bias_initializer=tf.keras.initializers.Zeros()),
                 layers.Dense(460, activation="elu",
-                             kernel_initializer=tf.keras.initializers.RandomNormal(mean=0.1, stddev=0.1),
+                             kernel_initializer=tf.keras.initializers.RandomNormal(mean=0., stddev=0.01),
                              bias_initializer=tf.keras.initializers.Zeros()),
                 layers.Dense(460, activation="elu",
-                             kernel_initializer=tf.keras.initializers.RandomNormal(mean=0.1, stddev=0.1),
+                             kernel_initializer=tf.keras.initializers.RandomNormal(mean=0., stddev=0.01),
                              bias_initializer=tf.keras.initializers.Zeros()),
                 layers.Dense(460, activation="elu",
-                             kernel_initializer=tf.keras.initializers.RandomNormal(mean=0.1, stddev=0.1),
+                             kernel_initializer=tf.keras.initializers.RandomNormal(mean=0., stddev=0.01),
                              bias_initializer=tf.keras.initializers.Zeros()),
                 layers.Dense(1, activation="elu",
-                             kernel_initializer=tf.keras.initializers.RandomNormal(mean=0.1, stddev=0.1),
+                             kernel_initializer=tf.keras.initializers.RandomNormal(mean=0., stddev=0.01),
                              bias_initializer=tf.keras.initializers.Zeros())
             ])
 
