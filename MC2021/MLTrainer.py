@@ -15,9 +15,8 @@ import pandas as pd
 # import matplotlib.pyplot as plt
 # import seaborn as sns
 # from sklearn.decomposition import PCA
-# from sklearn.linear_model import LinearRegression
 # import tensorflow as tf
-# from sklearn.linear_model import LinearRegression
+from sklearn.linear_model import LinearRegression
 # from sklearn.pipeline import Pipeline
 # from sklearn.preprocessing import PolynomialFeatures
 # from sklearn.linear_model import SGDRegressor
@@ -76,7 +75,7 @@ def main(argv=None):
     print("Input file: ", input_file)
 
     if args.file is None:
-        data_file_name = os.path.splitext(input_file)[0] + "_M" + str(args.model) + ".json"
+        data_file_name = os.path.splitext(os.path.basename(input_file))[0] + "_M" + str(args.model) + ".json"
     else:
         data_file_name = args.file
 
@@ -122,18 +121,24 @@ def main(argv=None):
             loss_store = decodedArray['loss_store']
             fit_mse_store = decodedArray['fit_mse_store']
             val_mse_store = decodedArray['val_mse_store']
+        print("Starting values:")
+        print(f"Mean square error for the fit    = {fit_mse_store[-1]}")
+        print(f"Mean square error for validation = {val_mse_store[-1]}")
+        print(f"Loss function                    = {loss_store[-1]}")
     else:
         weights_store = []
         loss_store = [0]
         fit_mse_store = [0]
         val_mse_store = [0]
-
-    print("Starting values:")
-    print(f"Mean square error for the fit    = {fit_mse_store[-1]}")
-    print(f"Mean square error for validation = {val_mse_store[-1]}")
+        print("Starting without restoring weights.")
 
     # Build the models
     model = None
+    if args.alpha > 1e-30:
+        reg = tf.keras.regularizers.l2(args.alpha)
+    else:
+        reg = None
+
     if args.model == 1:
         model = keras.Sequential([
             layers.Dense(units=1, activation="linear", input_shape=(7,),
@@ -141,112 +146,183 @@ def main(argv=None):
                          bias_initializer=tf.keras.initializers.Zeros())
         ])
     elif args.model == 2:
-        if args.alpha > 1e-30:
-            model = keras.Sequential([
-                keras.Input(shape=(7,)),
-                layers.Dense(20, activation="linear",
-                             kernel_initializer=tf.keras.initializers.RandomNormal(mean=0., stddev=0.01),
-                             bias_initializer=tf.keras.initializers.Zeros()),
-                layers.Dense(1, activation="elu",
-                             kernel_initializer=tf.keras.initializers.RandomNormal(mean=0., stddev=0.01),
-                             bias_initializer=tf.keras.initializers.Zeros(),
-                             kernel_regularizer=keras.regularizers.l2(args.alpha))
-            ])
-        else:
-            print("Warning: No regularization applied.")
-            model = keras.Sequential([
-                keras.Input(shape=(7,)),
-                layers.Dense(20, activation="linear",
-                             kernel_initializer=tf.keras.initializers.RandomNormal(mean=0., stddev=0.01),
-                             bias_initializer=tf.keras.initializers.Zeros()),
-                layers.Dense(1, activation="elu",
-                             kernel_initializer=tf.keras.initializers.RandomNormal(mean=0., stddev=0.01),
-                             bias_initializer=tf.keras.initializers.Zeros())
-            ])
-
+        model = keras.Sequential([
+            keras.Input(shape=(7,)),
+            layers.Dense(20, activation="linear",
+                         kernel_initializer=tf.keras.initializers.RandomNormal(mean=0., stddev=0.01),
+                         bias_initializer=tf.keras.initializers.Zeros()),
+            layers.Dense(1, activation="elu",
+                         kernel_initializer=tf.keras.initializers.RandomNormal(mean=0., stddev=0.01),
+                         bias_initializer=tf.keras.initializers.Zeros(),
+                         kernel_regularizer=reg)
+        ])
     elif args.model == 3:
-        if args.alpha > 1e-30:
-            model = keras.Sequential([
-                keras.Input(shape=(7,)),
-                layers.Dense(100, activation="elu",
-                             kernel_initializer=tf.keras.initializers.RandomNormal(mean=0., stddev=0.01),
-                             bias_initializer=tf.keras.initializers.Zeros(),
-                             kernel_regularizer=keras.regularizers.l2(args.alpha)),
-                layers.Dense(100, activation="elu",
-                             kernel_initializer=tf.keras.initializers.RandomNormal(mean=0., stddev=0.01),
-                             bias_initializer=tf.keras.initializers.Zeros(),
-                             kernel_regularizer=keras.regularizers.l2(args.alpha)),
-                layers.Dense(1, activation="elu",
-                             kernel_initializer=tf.keras.initializers.RandomNormal(mean=0., stddev=0.01),
-                             bias_initializer=tf.keras.initializers.Zeros(),
-                             kernel_regularizer=keras.regularizers.l2(args.alpha))
-            ])
-        else:
-            print("Warning: No regularization applied.")
-            model = keras.Sequential([
-                keras.Input(shape=(7,)),
-                layers.Dense(100, activation="elu",
-                             kernel_initializer=tf.keras.initializers.RandomNormal(mean=0., stddev=0.01),
-                             bias_initializer=tf.keras.initializers.Zeros()),
-                layers.Dense(100, activation="elu",
-                             kernel_initializer=tf.keras.initializers.RandomNormal(mean=0., stddev=0.01),
-                             bias_initializer=tf.keras.initializers.Zeros()),
-                layers.Dense(1, activation="elu",
-                             kernel_initializer=tf.keras.initializers.RandomNormal(mean=0., stddev=0.01),
-                             bias_initializer=tf.keras.initializers.Zeros())
-            ])
+        model = keras.Sequential([
+            keras.Input(shape=(7,)),
+            layers.Dense(100, activation="elu",
+                         kernel_initializer=tf.keras.initializers.RandomNormal(mean=0., stddev=0.01),
+                         bias_initializer=tf.keras.initializers.Zeros(),
+                         kernel_regularizer=reg),
+            layers.Dense(100, activation="elu",
+                         kernel_initializer=tf.keras.initializers.RandomNormal(mean=0., stddev=0.01),
+                         bias_initializer=tf.keras.initializers.Zeros(),
+                         kernel_regularizer=reg),
+            layers.Dense(1, activation="elu",
+                         kernel_initializer=tf.keras.initializers.RandomNormal(mean=0., stddev=0.01),
+                         bias_initializer=tf.keras.initializers.Zeros(),
+                         kernel_regularizer=reg)
+        ])
     elif args.model == 4:
-        if args.alpha > 1e-30:
-            model = keras.Sequential([
-                keras.Input(shape=(7,)),
-                layers.Dense(460, activation="elu",
-                             kernel_initializer=tf.keras.initializers.RandomNormal(mean=0., stddev=0.01),
-                             bias_initializer=tf.keras.initializers.Zeros(),
-                             kernel_regularizer=keras.regularizers.l2(args.alpha)),
-                layers.Dense(460, activation="elu",
-                             kernel_initializer=tf.keras.initializers.RandomNormal(mean=0., stddev=0.01),
-                             bias_initializer=tf.keras.initializers.Zeros(),
-                             kernel_regularizer=keras.regularizers.l2(args.alpha)),
-                layers.Dense(460, activation="elu",
-                             kernel_initializer=tf.keras.initializers.RandomNormal(mean=0., stddev=0.01),
-                             bias_initializer=tf.keras.initializers.Zeros(),
-                             kernel_regularizer=keras.regularizers.l2(args.alpha)),
-                layers.Dense(460, activation="elu",
-                             kernel_initializer=tf.keras.initializers.RandomNormal(mean=0., stddev=0.01),
-                             bias_initializer=tf.keras.initializers.Zeros(),
-                             kernel_regularizer=keras.regularizers.l2(args.alpha)),
-                layers.Dense(1, activation="elu",
-                             kernel_initializer=tf.keras.initializers.RandomNormal(mean=0., stddev=0.01),
-                             bias_initializer=tf.keras.initializers.Zeros(),
-                             kernel_regularizer=keras.regularizers.l2(args.alpha))
-            ])
-        else:
-            print("Warning: No regularization applied.")
-            model = keras.Sequential([
-                keras.Input(shape=(7,)),
-                layers.Dense(460, activation="elu",
-                             kernel_initializer=tf.keras.initializers.RandomNormal(mean=0., stddev=0.01),
-                             bias_initializer=tf.keras.initializers.Zeros()),
-                layers.Dense(460, activation="elu",
-                             kernel_initializer=tf.keras.initializers.RandomNormal(mean=0., stddev=0.01),
-                             bias_initializer=tf.keras.initializers.Zeros()),
-                layers.Dense(460, activation="elu",
-                             kernel_initializer=tf.keras.initializers.RandomNormal(mean=0., stddev=0.01),
-                             bias_initializer=tf.keras.initializers.Zeros()),
-                layers.Dense(460, activation="elu",
-                             kernel_initializer=tf.keras.initializers.RandomNormal(mean=0., stddev=0.01),
-                             bias_initializer=tf.keras.initializers.Zeros()),
-                layers.Dense(1, activation="elu",
-                             kernel_initializer=tf.keras.initializers.RandomNormal(mean=0., stddev=0.01),
-                             bias_initializer=tf.keras.initializers.Zeros())
-            ])
+        model = keras.Sequential([
+            keras.Input(shape=(7,)),
+            layers.Dense(460, activation="elu",
+                         kernel_initializer=tf.keras.initializers.RandomNormal(mean=0., stddev=0.01),
+                         bias_initializer=tf.keras.initializers.Zeros(),
+                         kernel_regularizer=reg),
+            layers.Dense(460, activation="elu",
+                         kernel_initializer=tf.keras.initializers.RandomNormal(mean=0., stddev=0.01),
+                         bias_initializer=tf.keras.initializers.Zeros(),
+                         kernel_regularizer=reg),
+            layers.Dense(460, activation="elu",
+                         kernel_initializer=tf.keras.initializers.RandomNormal(mean=0., stddev=0.01),
+                         bias_initializer=tf.keras.initializers.Zeros(),
+                         kernel_regularizer=reg),
+            layers.Dense(460, activation="elu",
+                         kernel_initializer=tf.keras.initializers.RandomNormal(mean=0., stddev=0.01),
+                         bias_initializer=tf.keras.initializers.Zeros(),
+                         kernel_regularizer=reg),
+            layers.Dense(1, activation="elu",
+                         kernel_initializer=tf.keras.initializers.RandomNormal(mean=0., stddev=0.01),
+                         bias_initializer=tf.keras.initializers.Zeros(),
+                         kernel_regularizer=reg)
+        ])
 
+    elif args.model == 5 or args.model == 6:
+        if args.model == 5:
+            initializer = tf.keras.initializers.RandomNormal(mean=0., stddev=0.1)
+        else:
+            initializer = tf.keras.initializers.Identity()
+        model = keras.Sequential([
+            keras.Input(shape=(7,)),
+            layers.Dense(28, activation="elu",
+                         kernel_initializer=initializer,
+                         bias_initializer=tf.keras.initializers.Zeros(),
+                         kernel_regularizer=reg),
+            layers.Dense(28, activation="elu",
+                         # kernel_initializer=tf.keras.initializers.RandomNormal(mean=0., stddev=0.01),
+                         kernel_initializer=initializer,
+                         bias_initializer=tf.keras.initializers.Zeros(),
+                         kernel_regularizer=reg),
+            layers.Dense(28, activation="elu",
+                         kernel_initializer=initializer,
+                         bias_initializer=tf.keras.initializers.Zeros(),
+                         kernel_regularizer=reg),
+            layers.Dense(28, activation="elu",
+                         kernel_initializer=initializer,
+                         bias_initializer=tf.keras.initializers.Zeros(),
+                         kernel_regularizer=reg),
+            layers.Dense(28, activation="elu",
+                         kernel_initializer=initializer,
+                         bias_initializer=tf.keras.initializers.Zeros(),
+                         kernel_regularizer=reg),
+
+            layers.Dense(28, activation="elu",
+                         kernel_initializer=initializer,
+                         bias_initializer=tf.keras.initializers.Zeros(),
+                         kernel_regularizer=reg),
+            layers.Dense(28, activation="elu",
+                         kernel_initializer=initializer,
+                         bias_initializer=tf.keras.initializers.Zeros(),
+                         kernel_regularizer=reg),
+            layers.Dense(28, activation="elu",
+                         kernel_initializer=initializer,
+                         bias_initializer=tf.keras.initializers.Zeros(),
+                         kernel_regularizer=reg),
+            layers.Dense(28, activation="elu",
+                         kernel_initializer=initializer,
+                         bias_initializer=tf.keras.initializers.Zeros(),
+                         kernel_regularizer=reg),
+            layers.Dense(28, activation="elu",
+                         kernel_initializer=initializer,
+                         bias_initializer=tf.keras.initializers.Zeros(),
+                         kernel_regularizer=reg),
+            layers.Dense(1, activation="linear",
+                         kernel_initializer=initializer,
+                         bias_initializer=tf.keras.initializers.Zeros(),
+                         kernel_regularizer=reg)
+        ])
+    elif args.model == 7:
+
+        if args.model == 7:
+            initializer = "he_normal"
+        else:
+            initializer = tf.keras.initializers.Identity()
+        model = keras.Sequential([
+            keras.Input(shape=(7,)),
+            layers.BatchNormalization(),
+            layers.Dense(28, activation="elu",
+                         kernel_initializer=initializer,
+                         bias_initializer=tf.keras.initializers.Zeros(),
+                         kernel_regularizer=reg),
+            layers.BatchNormalization(),
+            layers.Dense(28, activation="elu",
+                         # kernel_initializer=tf.keras.initializers.RandomNormal(mean=0., stddev=0.01),
+                         kernel_initializer=initializer,
+                         bias_initializer=tf.keras.initializers.Zeros(),
+                         kernel_regularizer=reg),
+            layers.BatchNormalization(),
+            layers.Dense(28, activation="elu",
+                         kernel_initializer=initializer,
+                         bias_initializer=tf.keras.initializers.Zeros(),
+                         kernel_regularizer=reg),
+            layers.BatchNormalization(),
+            layers.Dense(28, activation="elu",
+                         kernel_initializer=initializer,
+                         bias_initializer=tf.keras.initializers.Zeros(),
+                         kernel_regularizer=reg),
+            layers.BatchNormalization(),
+            layers.Dense(28, activation="elu",
+                         kernel_initializer=initializer,
+                         bias_initializer=tf.keras.initializers.Zeros(),
+                         kernel_regularizer=reg),
+            layers.BatchNormalization(),
+            layers.Dense(28, activation="elu",
+                         kernel_initializer=initializer,
+                         bias_initializer=tf.keras.initializers.Zeros(),
+                         kernel_regularizer=reg),
+            layers.BatchNormalization(),
+            layers.Dense(28, activation="elu",
+                         kernel_initializer=initializer,
+                         bias_initializer=tf.keras.initializers.Zeros(),
+                         kernel_regularizer=reg),
+            layers.BatchNormalization(),
+            layers.Dense(28, activation="elu",
+                         kernel_initializer=initializer,
+                         bias_initializer=tf.keras.initializers.Zeros(),
+                         kernel_regularizer=reg),
+            layers.BatchNormalization(),
+            layers.Dense(28, activation="elu",
+                         kernel_initializer=initializer,
+                         bias_initializer=tf.keras.initializers.Zeros(),
+                         kernel_regularizer=reg),
+            layers.BatchNormalization(),
+            layers.Dense(28, activation="elu",
+                         kernel_initializer=initializer,
+                         bias_initializer=tf.keras.initializers.Zeros(),
+                         kernel_regularizer=reg),
+            layers.BatchNormalization(),
+            layers.Dense(1, activation="linear",
+                         kernel_initializer=initializer,
+                         bias_initializer=tf.keras.initializers.Zeros(),
+                         kernel_regularizer=reg)
+        ])
+# keras.layers.BatchNormalization()
     else:
         print("Model not implemented")
         exit(1)
 
     model.compile(
-        # optimizer=tf.optimizers.SGD(learning_rate=0.000001),
+        #optimizer=tf.optimizers.SGD(learning_rate=args.rate),
         optimizer=tf.optimizers.Adam(learning_rate=args.rate),
         loss="mse"
         # tf.keras.losses.MeanSquaredError() # alternate: 'mean_absolute_error'='mae', 'mean_squared_error' = 'mse'
@@ -255,8 +331,35 @@ def main(argv=None):
     # Now run the iterations
     # TODO: Set this up smarter by using the history feature and having validation done with a callback.
     N_epocs = args.numepocs
-    if len(weights_store) == 0:
-        weights_store = [model.get_weights()]
+    if not args.cont:
+        # weights_store = [model.get_weights()]
+        # TODO: Make this possible for any of the models.
+        if args.model == 6:
+            print()
+            print("Setting the weights to the linear model")
+            print()
+            linreg = LinearRegression()
+            linreg.fit(dfc_fit, dfy_fit)
+            lin_coeffs = linreg.coef_[0]
+            lin_const = linreg.intercept_[0]
+            weights = model.get_weights()
+            for ii in range(len(lin_coeffs)):
+                weights[0][ii][ii] = lin_coeffs[ii]/2.
+                weights[0][ii][ii + len(lin_coeffs)] = -lin_coeffs[ii]/2.
+                weights[0][ii][ii + 2*len(lin_coeffs)] = lin_coeffs[ii]/2.
+                weights[0][ii][ii + 3*len(lin_coeffs)] = -lin_coeffs[ii]/2.
+                weights[-2][ii] = 1.
+                weights[-2][ii + len(lin_coeffs)] = -1.
+                weights[-2][ii + 2*len(lin_coeffs)] = 1.
+                weights[-2][ii + 3*len(lin_coeffs)] = -1.
+            # %%
+            weights[-1][0] = lin_const
+
+            for ii in range(len(weights)):
+                # Add some randomness to the initial weights
+                weights[ii] = weights[ii] + np.random.normal(0, 1e-6, weights[ii].shape)
+
+            model.set_weights(weights)
     else:
         model.set_weights(weights)
 
@@ -274,11 +377,6 @@ def main(argv=None):
                 print(f"[{i_epoc:2d}.{i_split:2d}] ")
             history = model.fit(dfc_fit.iloc[splits[i_split-1]:splits[i_split]],
                                 dfy_fit.iloc[splits[i_split-1]:splits[i_split]],  verbose=args.debug, epochs=1)
-            weights = model.get_weights()
-            if args.skipval:
-                weights_store[-1] = [0]
-
-            weights_store.append(weights)
 
             loss_store.append(history.history['loss'][-1])
             # Ypred_fit = model.predict(dfc_fit.iloc[splits[i_split-1]:splits[i_split]])
