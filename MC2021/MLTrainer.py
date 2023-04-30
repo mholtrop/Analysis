@@ -56,7 +56,7 @@ def main(argv=None):
     parser.add_argument('-n', '--numepocs', type=int, help="Number of epocs to optimize over.",
                         default=10)
     parser.add_argument('-m', '--model', type=int, help="Model to use: 1=Linear, 2=NN2 3=DeepNN, 4=Deep Wide", default=3)
-    parser.add_argument('-a', '--alpha', type=float, help="Regularization parameter for the NN.", default=1e-30)
+    parser.add_argument('-a', '--alpha', type=float, help="Regularization parameter for the NN.", default=0)
     parser.add_argument('--skipval', action="store_true", help="Skip validation for each step.")
     parser.add_argument('-cp', '--checkpoint', type=int, help="Save model json after N epochs.", default=0)
     parser.add_argument('--cont', action="store_true", help="Continue last run with last saved weights.")
@@ -379,8 +379,6 @@ def main(argv=None):
                                 dfy_fit.iloc[splits[i_split-1]:splits[i_split]],  verbose=args.debug, epochs=1)
 
             loss_store.append(history.history['loss'][-1])
-            # Ypred_fit = model.predict(dfc_fit.iloc[splits[i_split-1]:splits[i_split]])
-            # fit_mse_store.append(mean_squared_error(Ypred_fit, dfy_fit.iloc[splits[i_split-1]:splits[i_split]]))
             fit_mse_store.append(history.history['loss'][-1])
             if not args.skipval:
                 Ypred_val = model.predict(dfc_val.iloc[splits[i_split-1]:splits[i_split]])
@@ -391,19 +389,19 @@ def main(argv=None):
         if args.checkpoint > 0 and (i_epoc+1) % args.checkpoint == 0:
             if args.debug:
                 print("Storing checkpoint.")
+            weights_store.append(model.get_weights())
             outData = {"loss_store": loss_store, "fit_mse_store": fit_mse_store, "val_mse_store": val_mse_store,
                        "weights_store": weights_store}
             with open(data_file_name, "w") as f:
                 json.dump(outData, f, cls=NumpyArrayEncoder)
 
-    print("Computing non-batched loss:")
-    Ypred_val = model.predict(dfc_val, verbose=args.debug)
-    Ypred_fit = model.predict(dfc_fit, verbose=args.debug)
-    val_mse_store[-1] = mean_squared_error(Ypred_val, dfy_val)
-    fit_mse_store[-1] = mean_squared_error(Ypred_fit, dfy_fit)
     print("Final values:")
     print(f"Loss                             = {loss_store[-1]}")
+    Ypred_fit = model.predict(dfc_fit, verbose=args.debug)
+    fit_mse_store[-1] = mean_squared_error(Ypred_fit, dfy_fit)
     print(f"Mean square error for the fit    = {fit_mse_store[-1]}")
+    Ypred_val = model.predict(dfc_val, verbose=args.debug)
+    val_mse_store[-1] = mean_squared_error(Ypred_val, dfy_val)
     print(f"Mean square error for validation = {val_mse_store[-1]}")
 
     outData = {"loss_store": loss_store, "fit_mse_store": fit_mse_store, "val_mse_store": val_mse_store,
@@ -428,6 +426,7 @@ def main(argv=None):
         tmp_data['energy_NN'] = Ypred_fit[:, 0]
         rdf_NN = R.RDF.FromNumpy(tmp_data)
         rdf_NN.Snapshot("EcalTraining", data_file_name_root+"_fit.root")
+        print(f"Root file write: {data_file_name_root}_fit.root and {data_file_name_root}_val.root")
 
 
 if __name__ == "__main__":

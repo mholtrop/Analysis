@@ -64,6 +64,10 @@ def get_vertex_dictionary():
 def fancy_plot(histo, ones_lb, opt=0):
     """
     Fancy plot of the Calorimeter with the 2D histo overlayed.
+    With opt = 0x01 - Draw col instead of colz
+    With opt = 0x02 -
+    With opt = 0x04 - reset maximum.
+    With opt = 0x06 - Keep stats box.
     """
     # this defines the position of the top right region of big boxes, others will fall in by symmetry
     ecal_x_first = 1
@@ -83,7 +87,8 @@ def fancy_plot(histo, ones_lb, opt=0):
     #     ones_lb.Clear()
     if ones_lb is None:
         print(f'Booking histogram {histo.GetName()+"_oneslb"}')
-        ones_lb = R.TH2F(histo.GetName()+"_oneslb","oneslb",(ecal_nx+1)*2+1,-ecal_nx-1.5,ecal_nx+1.5,(ecal_ny+1)*2+1,-ecal_ny-1.5,ecal_ny+1.5);
+        ones_lb = R.TH2F(histo.GetName()+"_oneslb", "oneslb", (ecal_nx+1)*2+1, -ecal_nx-1.5,
+                         ecal_nx+1.5, (ecal_ny+1)*2+1, -ecal_ny-1.5, ecal_ny+1.5);
     else:
         ones_lb.Clear()
 
@@ -105,19 +110,19 @@ def fancy_plot(histo, ones_lb, opt=0):
     # this chunk of code just puts the grid in the right place
     for i in range(ecal_nx):
         for j in range(ecal_ny):
-            ones_lb.SetBinContent(xax.FindBin(ecal_x_first+i), yax.FindBin(ecal_y_first+j), 1)
-            ones_lb.SetBinContent(xax.FindBin(ecal_x_first+i), yax.FindBin(ecal_ny_first-j), 1)
+            ones_lb.SetBinContent(xax.FindBin(ecal_x_first+i), yax.FindBin(ecal_y_first+j), SetMax*10)
+            ones_lb.SetBinContent(xax.FindBin(ecal_x_first+i), yax.FindBin(ecal_ny_first-j), SetMax*10)
             if j == 0 and 0 < i < 10:
                 pass
             else:
-                ones_lb.SetBinContent(xax.FindBin(ecal_nx_first-i), yax.FindBin(ecal_ny_first-j), 1)
-                ones_lb.SetBinContent(xax.FindBin(ecal_nx_first-i), yax.FindBin(ecal_y_first+j), 1)
+                ones_lb.SetBinContent(xax.FindBin(ecal_nx_first-i), yax.FindBin(ecal_ny_first-j), SetMax*10)
+                ones_lb.SetBinContent(xax.FindBin(ecal_nx_first-i), yax.FindBin(ecal_y_first+j), SetMax*10)
 
-    ones_lb.Scale(SetMax) # scale them so the boxes are big enough
+    # ones_lb.Scale(SetMax)  # scale them so the boxes are big enough
     # draw stuff
     xax.SetTitle("x crystal index")
     yax.SetTitle("y crystal index")
-    if opt&0x1:
+    if opt & 0x1:
         histo.Draw("col")
     else:
         histo.Draw("colz")
