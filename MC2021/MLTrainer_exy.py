@@ -174,7 +174,7 @@ def main(argv=None):
     if activation_function == "leaky_relu":
         # activation_function = tf.nn.leaky_relu(alpha=0.01)
         activation_function = tf.keras.layers.LeakyReLU(alpha=0.01)
-        
+
     # Build the models
     model = None
     if args.alpha > 1e-30:
@@ -300,7 +300,7 @@ def main(argv=None):
     # --------------------------- Freezer --------------------------------
     # Parse the freeze argument
     if args.freeze is None or args.freeze.lower() == "none":
-        freeze = None
+        freeze = []
     else:
         freeze = eval(args.freeze)  # Parse the freeze argument as list or number
 
