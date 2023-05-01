@@ -140,7 +140,7 @@ def main(argv=None):
         means = np.array([0.]*len(df.columns))
         standard_devs = np.array([1.]*len(df.columns))
 
-    np.random.seed(42)
+    # np.random.seed(42)
     ran_loc = np.random.permutation(len(dfn))                   # To randomize the entries in the data set.
 
     # Split the data into what you may know, and the target
@@ -413,6 +413,11 @@ def main(argv=None):
         tmp_pred = model.predict(dfc_fit)
         print("Starting mse of model:", mean_squared_error(dfy_fit.iloc[:, 0], tmp_pred[:, 0]))
 
+    if args.debug > 0:
+        fit_debug = 1
+    else:
+        fit_debug = 0
+
     splits = [0]
     for i in range(args.split):
         splits.append(int((i+1)*len(dfc_fit)/args.split))
@@ -422,17 +427,14 @@ def main(argv=None):
             # Run the model once.
             if args.debug:
                 print(f"[{i_epoc:2d}.{i_split:2d}] ")
-            if args.debug > 0:
-                fit_debug = 1
-            else:
-                fit_debug = 0
+
             history = model.fit(dfc_fit.iloc[splits[i_split-1]:splits[i_split]],
                                 dfy_fit.iloc[splits[i_split-1]:splits[i_split]],  verbose=fit_debug, epochs=1)
 
             loss_store.append(history.history['loss'][-1])
             if not args.skipval:
                 print(f"Losses for the last fit           = {loss_store[-1]:12.6f}")
-                Ypred_fit = model.predict(dfc_fit.iloc[splits[i_split-1]:splits[i_split]])
+                Ypred_fit = model.predict(dfc_fit.iloc[splits[i_split-1]:splits[i_split]], verbose=fit_debug)
                 mse_fit = []
                 for ii in range(len(dfy_fit.iloc[0])):
                     mse_fit.append(mean_squared_error(Ypred_fit[:, ii],
@@ -441,7 +443,7 @@ def main(argv=None):
                 print(
                     f"Mean square errors for the fit    = {mse_fit[0]:12.6f}, {mse_fit[1]:12.6f}, {mse_fit[2]:12.6f}")
 
-                Ypred_val = model.predict(dfc_val.iloc[splits[i_split-1]:splits[i_split]])
+                Ypred_val = model.predict(dfc_val.iloc[splits[i_split-1]:splits[i_split]], verbose=fit_debug)
                 mse_val = []
                 for ii in range(len(dfy_val.iloc[0])):
                     mse_val.append(mean_squared_error(Ypred_val[:, ii],
@@ -466,13 +468,13 @@ def main(argv=None):
     print("Computing non-batched loss:")
     print("Final values:")
     print(f"Loss                             = {loss_store[-1]:12.6g}")
-    Ypred_fit = model.predict(dfc_fit, verbose=args.debug)
+    Ypred_fit = model.predict(dfc_fit, verbose=fit_debug)
     mse = []
     for ii in range(len(dfy_fit.columns)):
         mse.append(mean_squared_error(Ypred_fit[:, ii], dfy_fit.iloc[:, ii]))
     fit_mse_store[-1] = mse
     print(f"Mean square error for the fit    = {mse[0]:12.6f}, {mse[1]:12.6f}, {mse[2]:12.6f}")
-    Ypred_val = model.predict(dfc_val, verbose=args.debug)
+    Ypred_val = model.predict(dfc_val, verbose=fit_debug)
     mse = []
     for ii in range(len(dfy_val.columns)):
         mse.append(mean_squared_error(Ypred_val[:, ii], dfy_val.iloc[:, ii]))
