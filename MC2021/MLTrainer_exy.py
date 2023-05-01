@@ -22,7 +22,10 @@ from sklearn.linear_model import LinearRegression
 # from sklearn.preprocessing import PolynomialFeatures
 # from sklearn.linear_model import SGDRegressor
 from sklearn.metrics import mean_squared_error
-
+try:
+    import tensorrt
+except ImportError:
+    pass
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
