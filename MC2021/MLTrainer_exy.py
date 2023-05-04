@@ -143,21 +143,19 @@ def main(argv=None):
         means = np.array([0.]*len(df.columns))
         standard_devs = np.array([1.]*len(df.columns))
 
-    # np.random.seed(42)
-    ran_loc = np.random.permutation(len(dfn))                   # To randomize the entries in the data set.
-
     # Split the data into what you may know, and the target
     dfc = dfn[["energy", "x", "y", "nhits", "seed_e", "one_over_e", "one_over_sqrt_e"]]
     dfy = dfn[['score_e', 'score_x', 'score_y']]            # You can also train for "true_e"
 
     # Now split the data into a training and a validation set.
     split_frac = args.train/100.
-    split_point = int(len(ran_loc)*split_frac)
-    fit_loc = ran_loc[0:split_point]
+    split_point = int(len(dfn)*split_frac)
+    fit_loc = np.random.permutation(split_point)
+
     if split_frac < 50.:   # No need to validate on more than the training data.
-        val_loc = ran_loc[split_point:2*split_point]
+        val_loc = np.arange(split_point, 2*split_point)
     else:
-        val_loc = ran_loc[split_point:]
+        val_loc = np.arange(split_point, len(dfn))
     dfc_fit = dfc.iloc[fit_loc]
     dfy_fit = dfy.iloc[fit_loc]
     dfc_val = dfc.iloc[val_loc]
@@ -432,7 +430,7 @@ def main(argv=None):
                 print(f"[{i_epoc:2d}.{i_split:2d}] ")
 
             history = model.fit(dfc_fit.iloc[splits[i_split-1]:splits[i_split]],
-                                dfy_fit.iloc[splits[i_split-1]:splits[i_split]],  verbose=fit_debug, epochs=1)
+                                dfy_fit.iloc[splits[i_split-1]:splits[i_split]],  verbose=fit_debug, epochs=10)
 
             loss_store.append(history.history['loss'][-1])
             if not args.skipval:
