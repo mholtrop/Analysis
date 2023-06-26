@@ -49,7 +49,7 @@ using namespace ROOT::VecOps;
 int    Debug = 0;
 
 string Utility_Functions(void){
-    return("Utility Functions V1.0.5 \n");
+    return("Utility Functions V1.0.6 \n");
 }
 
 bool is_in_fiducial_region(int ix, int iy){
@@ -79,10 +79,34 @@ bool is_in_fiducial_region_extended(int ix, int iy, vector< pair<int,int> > excl
 
 }
 
+RVec<int> get_list_of_primary_mc(RVec<int> &mc_part_sim_status) {
+/// Get a list of indexes to MCParticles (mc_part_*) of the primary particles, i.e. from the generator.
+/// This version is based on the MC status word.
+   RVec<int> out;
+   for(size_t i=0; i< mc_part_sim_status.size(); ++i){
+      if( uint(mc_part_sim_status[i]) & 0x01 ){
+         out.push_back(int(i));
+      }
+   }
+   return out;
+}
+
+
 RVec<int> find_index_primary_mc_part(RVec<double> mc_part_z){
+// Find the primary MC particles in the event.
     RVec<int> out;
     for(size_t i=0;i< mc_part_z.size(); ++i){
-        if( mc_part_z[i]<= 0.001) out.push_back(i);
+        if( mc_part_z[i]< 0.01 && mc_part_z[i] > -0.01) out.push_back(i);
+    }
+    return out;
+}
+
+RVec<int> find_index_primary_mc_part(RVec<double> mc_part_z, RVec<double> mc_part_pz){
+// Find the primary MC particles in the event.
+// Original version had only mc_part_z[i]< 0.01. This is a bit more pure.
+    RVec<int> out;
+    for(size_t i=0;i< mc_part_z.size(); ++i){
+        if( mc_part_z[i]< 0.01 && mc_part_z[i] > -0.01 && mc_part_pz[i] > 0.01 ) out.push_back(i);
     }
     return out;
 }
