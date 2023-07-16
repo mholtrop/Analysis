@@ -33,6 +33,8 @@ def main(argv=None):
     parser.add_argument('-c', '--corrected', action="store_true", help="Store the corrected energy and position "
                                                                        "for the clusters.", default=False)
     parser.add_argument('-o', '--output', type=str, help="Output file name.", default="output.feather")
+    parser.add_argument('-hdf', '--hdf', action="store_true", help="Use HDF5 format instead of feather.")
+    parser.add_argument('-hits', '--hits', action="store_true", help="Store all the hits unfolded.")
     parser.add_argument('input_files', nargs='+', type=str, help="Input root files.")
 
     args = parser.parse_args(argv[1:])
@@ -168,21 +170,24 @@ def main(argv=None):
                     break
 
     print("Create and fill the Dataframe.")
-    panda_df = pd.DataFrame({'evt_num': evt_num, "energy": energy, "x": x, "y": y,
-                             "nhits": nhits, "seed_e": seed_e, "seed_ix": seed_ix,
-                             "seed_iy": seed_iy, "true_e": true_e, "true_pdg": true_pdg,
-                             "true_pdg_purity": true_pdg_purity, "score_e": score_e,
-                             "score_x": score_x, "score_y": score_y})
+    panda_df = pd.DataFrame({'evt_num': evt_num[:n_idx], "energy": energy[:n_idx], "x": x[:n_idx], "y": y[:n_idx],
+                             "nhits": nhits[:n_idx], "seed_e": seed_e[:n_idx], "seed_ix": seed_ix[:n_idx],
+                             "seed_iy": seed_iy[:n_idx], "true_e": true_e[:n_idx], "true_pdg": true_pdg[:n_idx],
+                             "true_pdg_purity": true_pdg_purity[:n_idx], "score_e": score_e[:n_idx],
+                             "score_x": score_x[:n_idx], "score_y": score_y[:n_idx]})
 
     delta_t = time.time() - now
     print(f"Processing time {delta_t:6.3f} seconds.")
 
+    now = time.time()
+    if args.hdf:
+        panda_df.to_hdf(args.output+".hdf5", 'data')
+    else:
     # now = time.time()
-    # panda_df.to_feather(args.output+".feather")
+        panda_df.to_feather(args.output+".feather")
     # delta_t = time.time() - now
     # print(f"Saved to {args.output}.feather in {delta_t:6.3f} seconds.")
-    now = time.time()
-    panda_df.to_hdf(args.output, 'data')
+
     delta_t = time.time() - now
     print(f"Saved to {args.output} in {delta_t:6.3f} seconds.")
 
