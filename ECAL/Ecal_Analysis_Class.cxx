@@ -6,6 +6,7 @@
 RNode Ecal_Analysis_Class::dataframe_for_ml(RNode in) {
    /// Return a dataframe that is "flattened" for use in ML systems.
    /// This will only return some of the ECAL and Score plane data.
+   return(in);
 }
 
 RNode Ecal_Analysis_Class::extend_dataframe(RNode in){
@@ -67,6 +68,42 @@ RNode Ecal_Analysis_Class::extend_dataframe(RNode in){
    ret = ret.Define("n_mc_score_secondary_hits",lambda_get_score_n_secondary_hits,{"mc_part_sim_status", "mc_score_part_idx", "mc_score_z", "mc_score_pz"});
    return ret;
 }
+//
+//vector<int> Ecal_Analysis_Class::get_cluster_pdg(vector<vector<int>> &cluster_hits, vector<int> &parent_pdg, vector<double> &hit_energy){
+//   vector<int> result;
+//   for(int ic=0; ic< cluster_hits.size(); ++ic){
+//      map<int, double> pdg_count;  // Assumes auto initialization to zero of new elements
+//      for(int ih=0; ih< cluster_hits[ic].size(); ++ih){
+//         int type = parent_pdg[cluster_hits[ic][ih]];
+//         double weight = hit_energy[cluster_hits[ic][ih]];
+//         pdg_count[type] += weight;
+//      }
+//// Find the maximum item in the pdg_count map.
+//      auto mymax = std::max_element(pdg_count.begin(), pdg_count.end(), [] (const std::pair<int,double>& a, const std::pair<int,double>& b)->bool{ return a.second < b.second; } );
+//      result.push_back(mymax->first);
+//   }
+//   return result;
+//}
+//
+//vector<double> Ecal_Analysis_Class::get_cluster_pdg_purity(vector<vector<int>> &cluster_hits, vector<int> &parent_pdg, vector<double> &hit_energy){
+//   vector<double> result;
+//   for(int ic=0; ic< cluster_hits.size(); ++ic){
+//      double n_tot=0.;
+//      map<int,double> pdg_count;  // Assumes auto initialization to zero of new elements
+//      for(int ih=0; ih< cluster_hits[ic].size(); ++ih){
+//         int type = parent_pdg[cluster_hits[ic][ih]];
+//         double weight = hit_energy[cluster_hits[ic][ih]];
+//         pdg_count[type] += weight;
+//         n_tot += weight;
+//      }
+//      // Find the maximum item in the pdg_count map.
+//      auto mymax = std::max_element(pdg_count.begin(), pdg_count.end(), [] (const std::pair<int,double>& a, const std::pair<int,double>& b)->bool{ return a.second < b.second; } );
+//      result.push_back( mymax->second/n_tot);
+//   }
+//   return result;
+//}
+
+
 
 vector< vector<int> > Ecal_Analysis_Class::get_score_cluster_indexes(
       vector<double> &mc_score_pz,
@@ -206,14 +243,16 @@ vector< double > Ecal_Analysis_Class::get_score_cluster_pz(vector< vector<int> >
 }
 
 vector< double > Ecal_Analysis_Class::get_score_cluster_e(vector< vector<int> > &indexes,
-                                   vector<double> &mc_score_px, vector<double> &mc_score_py, vector<double> &mc_score_pz){
+                                   vector<double> &mc_score_px, vector<double> &mc_score_py,
+                                   vector<double> &mc_score_pz){
    // Return the energy as Sum(sqrt(px**2 + py**2 + pz**2))
    vector<double> out;
    for(size_t i=0; i<indexes.size(); ++i){
       double sum = 0;
       for(size_t j=0; j< indexes[i].size(); ++j){
          int idx = indexes[i][j];
-         sum += sqrt(mc_score_px[idx]*mc_score_px[idx]+mc_score_py[idx]*mc_score_py[idx]+mc_score_pz[idx]*mc_score_pz[idx]);
+         sum += sqrt(mc_score_px[idx]*mc_score_px[idx]+mc_score_py[idx]*mc_score_py[idx]+
+               mc_score_pz[idx]*mc_score_pz[idx]);
       }
       out.push_back(sum);
    }
@@ -355,6 +394,15 @@ vector<int> Ecal_Analysis_Class::get_list_of_primary_mc(vector<double> &part_z) 
    vector<int> out;
    for(size_t i=0; i< part_z.size(); ++i)
       if(abs(part_z[i]) < 1e-6) out.push_back(int(i));
+   return out;
+}
+
+vector<int> Ecal_Analysis_Class::get_list_of_primary_mc(vector<double> &part_z, vector<double> &part_pz) {
+/// Get a list of indexes to MCParticles (mc_part_*) of the primary particles, i.e. from the generator.
+/// This version is based on the starting point of the particle being in the target.
+   vector<int> out;
+   for(size_t i=0; i< part_z.size(); ++i)
+      if(abs(part_z[i]) < 1e-6 && part_pz[i] > 0.001) out.push_back(int(i));
    return out;
 }
 

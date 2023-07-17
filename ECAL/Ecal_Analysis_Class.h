@@ -39,6 +39,8 @@
 
 #include <string>
 #include <vector>
+#include <algorithm>
+#include <map>
 using namespace std;
 #include "TObject.h"
 #include "ROOT/RDataFrame.hxx"
@@ -65,7 +67,7 @@ public:
    // crystal_factors = [0.06600114645748535,0.06600114778752586,0.0665927423975814,0.06659274408814787]
 
 public:
-   string Version(){ return "V1.0.8";}
+   string Version(){ return "V1.0.9";}
 
    // Note: I tried templating this, with instantiations to make the templates resolve. This works at the root prompt,
    // but in Python it could not resolve the correct template. Given that the RNode is a "wicked" complicated item, we just overload.
@@ -75,6 +77,9 @@ public:
    RNode extend_dateframe(RDataFrame in){ return extend_dataframe( (RNode)(in));}
    RNode dataframe_for_ml(RNode in);
    RNode dataframe_for_ml(RDataFrame in){ return dataframe_for_ml( (RNode) in);}
+
+//   vector<int> get_cluster_pdg(vector<vector<int>> &cluster_hits, vector<int> &parent_pdg, vector<double> &hit_energy);
+//   vector<double> get_cluster_pdg_purity(vector<vector<int>> &cluster_hits, vector<int> &parent_pdg, vector<double> &hit_energy);
 
    vector< vector<int> > get_score_cluster_indexes( vector<double> &mc_score_pz,
          vector<double> &mc_score_x, vector<double> &mc_score_y, vector<double> &mc_score_z,
@@ -86,6 +91,7 @@ public:
                                       vector<double> &mc_score_px, vector<double> &mc_score_py, vector<double> &mc_score_pz);
 
    static vector<int> get_list_of_primary_mc(vector<double> &part_z);
+   static vector<int> get_list_of_primary_mc(vector<double> &part_z, vector<double> &part_pz);
    static vector<int> get_list_of_primary_mc(vector<int> &mc_part_sim_status);
    static vector<int> get_list_of_all_secondary_mc(vector<double> &part_z);
    static vector<int> get_list_of_all_secondary_mc(vector<int> &mc_part_sim_status);

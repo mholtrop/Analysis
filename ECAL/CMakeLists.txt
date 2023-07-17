@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(MC2021 VERSION 1.0.0 LANGUAGES CXX)
+project(Ecal_Analysis VERSION 1.0.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -67,6 +67,6 @@ set_target_properties(${PROJECT_NAME} PROPERTIES PUBLIC_HEADER "${Ecal_Analysis_
 
 add_executable(debug_main debug_main.cxx)
 target_include_directories(debug_main PUBLIC /data/HPS/include)
-target_link_libraries(debug_main MC2021 -L/data/HPS/lib -lMiniDST)
+target_link_libraries(debug_main ${PROJECT_NAME}  -L/data/HPS/lib -lMiniDST)
 
 install(TARGETS ${PROJECT_NAME} DESTINATION ${CMAKE_INSTALL_LIBDIR} PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCDIR} )
