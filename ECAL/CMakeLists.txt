@@ -59,7 +59,7 @@ endif(APPLE)
 set(Ecal_Analysis_PUBLIC_HEADERS "Ecal_Analysis_Class.h" )
 ROOT_GENERATE_DICTIONARY(Ecal_Analysis_ClassDict ${Ecal_Analysis_PUBLIC_HEADERS} MODULE ${PROJECT_NAME} LINKDEF Ecal_Analysis_ClassLinkDef.h)
 
-add_library(${PROJECT_NAME} SHARED Ecal_Analysis_Class.cxx Ecal_Analysis_ClassDict.cxx)
+add_library(${PROJECT_NAME} SHARED Ecal_Analysis_Class.cxx Ecal_Analysis_ClassDict.cxx Ecal_Analysis_Class.h)
 target_include_directories(${PROJECT_NAME} PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>)
 
 target_link_libraries(${PROJECT_NAME} PUBLIC ${ROOT_LIBRARIES})

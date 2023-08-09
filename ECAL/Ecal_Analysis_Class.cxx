@@ -113,7 +113,7 @@ vector< vector<int> > Ecal_Analysis_Class::get_score_cluster_indexes(
 // So index[cluster_number][hit_in_cluster_number] returns the index to that hit in that cluster.
 // Conditions for a hit are that the track passed through the score plane at z=1443 in the positive direction with z_momentum > mc_score_pz_cut.
 // Hits are grouped in clusters around the most energetic (in pz) hits if they are within mc_score_close_cut in x and y.
-// The *clusters* are sorted to be in the same order as those in the ecal_cluster_x and ecal_cluster_y arrays, approcimately matching by location.
+// The *clusters* are sorted to be in the same order as those in the ecal_cluster_x and ecal_cluster_y arrays, approximately matching by location.
 
    vector< vector<int> > out;        // TODO: is there a more efficient storage model? out total size = total number of hits.
    vector<bool> has_been_used(mc_score_z.size(), false);
