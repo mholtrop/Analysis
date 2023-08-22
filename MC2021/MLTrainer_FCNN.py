@@ -4,6 +4,22 @@
 # For details see the notebook: MLTests.ipynb
 # This code will train for E, x and y simultaneously.
 #
+###
+# Sparsify the input data from the full ROOT files can be done with C++ ROOT:
+# .L ../lib/libEcal_Analysis.dylib
+# ROOT::EnableImplicitMT();
+# using namespace ROOT;
+# auto ch = new TChain("MiniDST"); ch->Add("/data/HPS/data/MC/ele_2019/ele_*.root")
+# auto rdf = RDataFrame(*ch)
+# rdf.Snapshot("MiniDST","electrons_sparse.root", {"ecal_cluster_energy", "ecal_cluster_mc_id",
+#         "ecal_cluster_seed_energy", "ecal_cluster_seed_ix", "ecal_cluster_seed_iy", "ecal_cluster_uncor_energy",
+#         "ecal_cluster_uncor_hits", "ecal_cluster_x", "ecal_cluster_y", "ecal_hit_energy", "ecal_hit_index_x",
+#         "ecal_hit_index_y", "event_number", "mc_part_energy", "mc_score_px", "mc_score_py", "mc_score_pz",
+#         "mc_score_x", "mc_score_y", "mc_score_z"})
+#
+# This reduces the total size from 20GB to 5GB (~2M events) and the load time for 200000 uncut clusters from
+# ~43s to ~21s.
+#
 import sys
 import os
 import argparse
@@ -61,7 +77,6 @@ def main(argv=None):
                         default=1)
     parser.add_argument('-n', '--numepocs', type=int, help="Number of epocs to optimize over.",
                         default=10)
-    parser.add_argument('--checkpoint', type=int, help="Write a checkpoint file after N epochs.", default=0)
     parser.add_argument('-f', '--freeze', type=str, help="Freeze layers. ", default=None)
     parser.add_argument('-c', '--cuts', type=int, help="Cuts to us. 0=None, 1=Fiducial, 2=Anti-Fiducial", default=0)
     # parser.add_argument('-r', '--random', type=float, help="Init weights randomly with std, instead of linear fit.",
@@ -78,6 +93,7 @@ def main(argv=None):
                         default=None)
     parser.add_argument('--root', action="store_true",
                         help="As a last step, create a ROOT RDataFrame and store to file.")
+    parser.add_argument('--mcpart', action="store_true", help="Include the MC particle energy in output.")
     parser.add_argument('--rate', type=float, help="Set the training rate. (1e-4) ", default=1e-4)
     parser.add_argument('--momentum', type=float, help="Set the training momentum. (0.9)", default=0.9)
     parser.add_argument('input_files', type=str, nargs='+', help="Input files with data in the ROOT format.")
@@ -363,6 +379,18 @@ def main(argv=None):
     for f in input_files:
         ch.Add(f)
     mdst = R.MiniDst()  # Initiate the class
+    #
+    # Turning these branches off should speed up reading the data, but I do not observe any effect.
+    #
+    mdst.use_hodo_hits = False
+    mdst.use_hodo_clusters = False
+    mdst.use_svt_hits = False
+    mdst.use_kf_tracks = False
+    mdst.use_gbl_tracks = False
+    mdst.use_matched_tracks = False
+    mdst.use_gbl_kink_data = False
+    mdst.use_kf_particles = False
+    mdst.use_gbl_particles = False
     mdst.use_mc_particles = True  # Tell it to look for the MC Particles in the TTree
     mdst.use_ecal_cluster_uncor = True
     mdst.use_mc_scoring = True
@@ -416,10 +444,16 @@ def main(argv=None):
                     x_loc += 23
                 y_loc = mdst.ecal_hit_index_y[i_hit] + 6
                 ecal_hits[out_evt][y_loc, x_loc][0] = mdst.ecal_hit_energy[i_hit]
-            mc_id = mdst.ecal_cluster_mc_id[i_ecal]
+            if args.mcpart:
+                mc_id = mdst.ecal_cluster_mc_id[i_ecal]
+                ecal_energy[out_evt][2] = mdst.mc_part_energy[mc_id]
+            else:
+                ecal_energy[out_evt][2] = 0
+
             i_cl = cl_idx[i_ecal]
+
             # ecal_truth[out_evt][0] = mdst.mc_part_energy[mc_id]   ## To train for MC_particle energy truth
-            # print(f"{evt:5d} cl_e = {mdst.ecal_cluster_energy[i_ecal]}  s_e = {score_e[i_ecal]}  mc_e = {mdst.mc_part_energy[mc_id]}")
+            # This requires the newer version ROOT data that contains the mdst.ecal_cluster_mc_id data.
 
             ecal_is_fiducial[out_evt] = is_fiducial[i_ecal]
             ecal_truth[out_evt][0] = score_e[i_ecal]
@@ -427,7 +461,7 @@ def main(argv=None):
             ecal_truth[out_evt][2] = score_y[i_ecal] / y_scaling
             ecal_energy[out_evt][0] = mdst.ecal_cluster_energy[i_ecal]
             ecal_energy[out_evt][1] = score_e[i_ecal]
-            ecal_energy[out_evt][2] = mdst.mc_part_energy[mc_id]
+
             ecal_x[out_evt] = [mdst.ecal_cluster_x[i_ecal] / x_scaling, score_x[i_ecal] / x_scaling]
             ecal_y[out_evt] = [mdst.ecal_cluster_y[i_ecal] / y_scaling, score_y[i_ecal] / y_scaling]
             if args.cuts == 0:
@@ -529,35 +563,35 @@ def main(argv=None):
             f'Acc: {history["accuracy"][-1] * 100:6.3f}%, '
             f'Val Loss: {history["val_loss"][-1] :10.7f}, '
             f'Val Acc: {history["val_accuracy"][-1] * 100:6.3f}%'
-        , flush=True)
-
+            , flush=True)
 
         if args.checkpoint > 0 and (i_epoc) % args.checkpoint == 0:
             if args.debug:
                 print("Storing checkpoint.")
             model.save_weights(checkpoint_path.format(epoch=i_epoc))
 
-    print("\nFinal values:")
-    print(f"Last Loss      : {history['loss'][-1]:12.6g}  Accuracy: {history['accuracy'][-1] * 100:6.3f}%")
-    pred_train = model(x_train, training=False)
-    loss_train = loss_object(y_train, pred_train)
-    acc_train = validation_accuracy(y_train, pred_train)
-    print(f"Training Loss  : {float(loss_train.numpy()):12.6g}  Accuracy: {float(acc_train.numpy()) * 100:6.3f}%")
-    pred = model(x_test, training=False)
-    loss = loss_object(y_test, pred)
-    accuracy = validation_accuracy(y_test, pred)
-    print(f"Validation Loss: {float(loss.numpy()):12.6g}  Accuracy: {float(accuracy.numpy())*100:6.3f}%")
+    if len(history['loss']) > 0:
+        print("\nFinal values:")
+        print(f"Last Loss      : {history['loss'][-1]:12.6g}  Accuracy: {history['accuracy'][-1] * 100:6.3f}%")
+        pred_train = model(x_train, training=False)
+        loss_train = loss_object(y_train, pred_train)
+        acc_train = validation_accuracy(y_train, pred_train)
+        print(f"Training Loss  : {float(loss_train.numpy()):12.6g}  Accuracy: {float(acc_train.numpy()) * 100:6.3f}%")
+        pred = model(x_test, training=False)
+        loss = loss_object(y_test, pred)
+        accuracy = validation_accuracy(y_test, pred)
+        print(f"Validation Loss: {float(loss.numpy()):12.6g}  Accuracy: {float(accuracy.numpy())*100:6.3f}%")
 
-    model_weights = model.get_weights()
-    for h in history:
-        if type(history[h]) is list:
-            for i in range(len(history[h])):
-                history[h][i] = float(history[h][i])
+        model_weights = model.get_weights()
+        for h in history:
+            if type(history[h]) is list:
+                for i in range(len(history[h])):
+                    history[h][i] = float(history[h][i])
 
-    outdata = {"epochs": epoch, "history": history, "model_weights": model_weights}
-    with open(data_file_name, "w") as write_file:
-        json.dump(outdata, write_file, cls=NumpyArrayEncoder)
-    print("Done writing serialized info into "+data_file_name)
+        outdata = {"epochs": epoch, "history": history, "model_weights": model_weights}
+        with open(data_file_name, "w") as write_file:
+            json.dump(outdata, write_file, cls=NumpyArrayEncoder)
+        print("Done writing serialized info into "+data_file_name)
 
     if args.root:
         print("Storing the prediction output in ROOT file:"
@@ -577,6 +611,7 @@ def main(argv=None):
                                      'pred_e': pred_train[:, 0].numpy().copy()})
         opts.fMode = "UPDATE"
         rdf_train.Snapshot("Training", data_file_name_root + ".root", (""), opts)
+
 
 if __name__ == "__main__":
     sys.exit(main())
