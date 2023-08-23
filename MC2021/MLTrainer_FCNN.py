@@ -21,6 +21,7 @@
 # ~43s to ~21s.
 #
 import sys
+sys.path.append("/Users/maurik/root/master/lib")
 import os
 import argparse
 import time
@@ -59,13 +60,13 @@ R.EAC.mc_score_indexes_are_sorted = True
 __version__ = "1.0.3"
 ch = R.TChain("MiniDST")
 mdst = R.MiniDst()  # Initiate the class
-ecal_hits = None
-ecal_is_fiducial = None
-ecal_truth = None
-ecal_energy = None
-ecal_x = None
-ecal_y = None
-ecal_mc_energy = None
+ecal_hits = np.array(0)
+ecal_is_fiducial = np.array(0)
+ecal_truth = np.array(0)
+ecal_energy = np.array(0)
+ecal_x = np.array(0)
+ecal_y = np.array(0)
+ecal_mc_energy = np.array(0)
 
 
 class NumpyArrayEncoder(JSONEncoder):
@@ -152,9 +153,9 @@ def get_data_from_tchain(event_start, total_number_of_clusters, which_cut, use_m
             break
         n_event += 1
 
-    if debug>1:
+    if debug > 1:
         print(f"\nn_event = {n_event}  out_evt = {out_evt}  current event = {event}")
-    if debug>2:
+    if debug > 2:
         print(f"We got more ECal clusters than score clusters {more_clusters_than_score_clusters} times.")
     return event
 
@@ -356,13 +357,14 @@ def main(argv=None):
                 x = self.d2(x)
                 x = self.d3(x)
                 return x
+
     elif args.model == 3:
         checkpoint_path = "check_points/CNN_Model_3-{epoch:04d}.ckpt"
         checkpoint_dir = os.path.dirname(checkpoint_path)
 
         class MyModel(Model):
             def __init__(self):
-                super(MyModel, self).__init__()
+                super(Model, self).__init__()
                 self.conv1 = Conv2D(32, 5, activation=activation_function, kernel_regularizer=reg)
                 self.conv2 = Conv2D(16, 3, activation=activation_function, kernel_regularizer=reg)
                 self.maxpool1 = MaxPooling2D(pool_size=(2, 2), strides=(2, 2))
@@ -431,7 +433,6 @@ def main(argv=None):
     # --------------------------- Restore from JSON file --------------------------------
     history = {'loss': [], 'accuracy': [], 'val_loss': [], 'val_accuracy': []}
 
-
     if args.cont:
         if args.debug > 1:
             print("Loading weights from file: ", data_file_name)
@@ -450,8 +451,6 @@ def main(argv=None):
     else:
         weights_store = []
 
-
-
     # --------------------------- Freezer --------------------------------
     # Parse the freeze argument
     if args.freeze is None or args.freeze.lower() == "none":
@@ -467,7 +466,6 @@ def main(argv=None):
             print("Freezing: ", freeze)
         for i in freeze:
             model.get_layer(index=i).trainable = False
-
 
     if args.debug:
         print(f"Activation function = {activation_function}")
@@ -522,11 +520,17 @@ def main(argv=None):
     for i_epoc in range(args.numepocs):
         event = 0
         epoch += 1
+
+        train_loss.reset_states()
+        train_accuracy.reset_states()
+        validation_loss.reset_states()
+        validation_accuracy.reset_states()
+
         for i_split in range(len(splits) - 1):
             if args.debug:
                 print(f"[{epoch:2d},{i_split:2d}] ", end="")
             # If we have only one split we do not need to re-load the same data each i_epoc.
-            if len(splits) > 2 or i_epoc == 0:
+            if len(splits) > 0 or i_epoc == 0:
                 # Fetch the split worth of data:
                 event = get_data_from_tchain(event, splits_count[i_split], args.cuts, args.mcpart, x_scaling, y_scaling,
                                              args.debug)
@@ -573,35 +577,36 @@ def main(argv=None):
                 x_test = fid_ecal_hits[n_training:n_training + n_validation]
                 y_test = fid_ecal_truth[n_training:n_training + n_validation, 0:1]
 
-            train_loss.reset_states()
-            train_accuracy.reset_states()
-            validation_loss.reset_states()
-            validation_accuracy.reset_states()
-
             for i in range(len(x_train) // mini_batch_size):
                 if args.debug and i % (len(x_train) // mini_batch_size // 10) == 0:
                     print(f".", end="", flush=True)
                 train_step(x_train[i * mini_batch_size:(i + 1) * mini_batch_size],
-                           y_train[i * mini_batch_size:(i + 1) * mini_batch_size])
+                            y_train[i * mini_batch_size:(i + 1) * mini_batch_size])
+            remainder = len(x_train) - mini_batch_size*(len(x_train) // mini_batch_size)
+            if remainder > 0:
+                train_step(x_train[-remainder:], y_train[-remainder:])
 
             if not args.skipval:
                 for i in range(len(x_test) // mini_batch_size):
                     if args.debug and  i % (len(x_test) // mini_batch_size // 10) == 0:
                         print(f"+", end="", flush=True)
                     test_step(x_test[i * mini_batch_size:(i + 1) * mini_batch_size],
-                              y_test[i * mini_batch_size:(i + 1) * mini_batch_size])
+                               y_test[i * mini_batch_size:(i + 1) * mini_batch_size])
+            remainder = len(x_test) - mini_batch_size*(len(x_test) // mini_batch_size)
+            if remainder > 0:
+                train_step(x_test[-remainder:], y_test[-remainder:])
 
-            history['loss'] += [float(train_loss.result().numpy())]
-            history['accuracy'] += [float(train_accuracy.result().numpy())]
-            history['val_loss'] += [float(validation_loss.result().numpy())]
-            history['val_accuracy'] += [float(validation_accuracy.result().numpy())]
-            if args.debug:
-                print(
-                    f' Loss: {history["loss"][-1]:10.7f}, '
-                    f'Acc: {history["accuracy"][-1] * 100:6.3f}%, '
-                    f'Val Loss: {history["val_loss"][-1] :10.7f}, '
-                    f'Val Acc: {history["val_accuracy"][-1] * 100:6.3f}%'
-                    , flush=True)
+        history['loss'] += [float(train_loss.result().numpy())]
+        history['accuracy'] += [float(train_accuracy.result().numpy())]
+        history['val_loss'] += [float(validation_loss.result().numpy())]
+        history['val_accuracy'] += [float(validation_accuracy.result().numpy())]
+        if args.debug:
+            print(
+                f' Loss: {history["loss"][-1]:10.7f}, '
+                f'Acc: {history["accuracy"][-1] * 100:6.3f}%, '
+                f'Val Loss: {history["val_loss"][-1] :10.7f}, '
+                f'Val Acc: {history["val_accuracy"][-1] * 100:6.3f}%'
+                , flush=True)
 
         if args.checkpoint > 0 and epoch % args.checkpoint == 0:
             if args.debug:
