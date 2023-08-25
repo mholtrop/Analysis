@@ -86,9 +86,6 @@ def get_data_from_tchain(event_start, total_number_of_clusters, which_cut, use_m
     global ch, mdst
     global ecal_hits, ecal_is_fiducial, ecal_truth, ecal_energy, ecal_x, ecal_y, ecal_mc_energy
 
-    if debug > 2:
-        print("Getting data from ROOT files.")
-
     out_evt = 0
     n_event = 0
     more_clusters_than_score_clusters = 0  # Count errors.
@@ -107,9 +104,15 @@ def get_data_from_tchain(event_start, total_number_of_clusters, which_cut, use_m
         is_fiducial = R.EAC.fiducial_cut(mdst.ecal_cluster_seed_ix, mdst.ecal_cluster_seed_iy)
 
         n_clust = len(mdst.ecal_cluster_uncor_energy)
+        n_clust2 = len(mdst.ecal_cluster_energy)
+
+        if n_clust == 0:
+            print(f"\nZero clusters in event: {event}  aka {mdst.event_number:6d} :: {len(mdst.ecal_cluster_uncor_energy)} - {n_clust2} - {len(mdst.ecal_cluster_uncor_hits)}")
         if n_clust > len(score_e):
             n_clust = len(score_e)  # This would be very rare.
             more_clusters_than_score_clusters += 1
+        if n_clust > 1:
+            print(f"More than one cluster in event: {event} - {n_clust}")
         for i_ecal in range(n_clust):
             for i_echit in range(len(mdst.ecal_cluster_uncor_hits[i_ecal])):
                 i_hit = mdst.ecal_cluster_uncor_hits[i_ecal][i_echit]
@@ -131,16 +134,17 @@ def get_data_from_tchain(event_start, total_number_of_clusters, which_cut, use_m
             # ecal_truth[out_evt][0] = mdst.mc_part_energy[mc_id]   ## To train for MC_particle energy truth
             # This requires the newer version ROOT data that contains the mdst.ecal_cluster_mc_id data.
 
-            ecal_is_fiducial[out_evt] = is_fiducial[i_ecal]
-            ecal_truth[out_evt][0] = score_e[i_ecal]
-            ecal_truth[out_evt][1] = score_x[i_ecal] / x_scaling
-            ecal_truth[out_evt][2] = score_y[i_ecal] / y_scaling
-            ecal_energy[out_evt][0] = mdst.ecal_cluster_energy[i_ecal]
-            ecal_energy[out_evt][1] = score_e[i_ecal]
-
-            ecal_x[out_evt] = [mdst.ecal_cluster_x[i_ecal] / x_scaling, score_x[i_ecal] / x_scaling]
-            ecal_y[out_evt] = [mdst.ecal_cluster_y[i_ecal] / y_scaling, score_y[i_ecal] / y_scaling]
-            if which_cut == 0 or (which_cut == 1 and is_fiducial[i_ecal]) or (which_cut == 2 and not is_fiducial[i_ecal]):
+            if (which_cut == 0 or
+               (which_cut == 1 and is_fiducial[i_ecal]) or
+               (which_cut == 2 and not is_fiducial[i_ecal])):
+                ecal_is_fiducial[out_evt] = is_fiducial[i_ecal]
+                ecal_truth[out_evt][0] = score_e[i_ecal]
+                ecal_truth[out_evt][1] = score_x[i_ecal] / x_scaling
+                ecal_truth[out_evt][2] = score_y[i_ecal] / y_scaling
+                ecal_energy[out_evt][0] = mdst.ecal_cluster_energy[i_ecal]
+                ecal_energy[out_evt][1] = score_e[i_ecal]
+                ecal_x[out_evt] = [mdst.ecal_cluster_x[i_ecal] / x_scaling, score_x[i_ecal] / x_scaling]
+                ecal_y[out_evt] = [mdst.ecal_cluster_y[i_ecal] / y_scaling, score_y[i_ecal] / y_scaling]
                 out_evt += 1
                 if out_evt % (total_number_of_clusters//10) == 0 and debug:
                     print("o", end="", flush=True)
@@ -178,6 +182,7 @@ def main(argv=None):
 
     parser.add_argument('-d', '--debug', action="count", help="Be more verbose if possible. ", default=0)
     parser.add_argument('-N', '--numevents', type=int, help="Number of events to use.", default=100000)
+    parser.add_argument('--start', type=int, help="Start event number.", default=0)
     parser.add_argument('-t', '--train', type=float, help="Percentage of data to use for training, rest is validation.",
                         default=50.)
     parser.add_argument('-b', '--minibatch', type=int, help="Mini batch size.", default=32)
@@ -399,7 +404,8 @@ def main(argv=None):
 
     # loss_object = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
     loss_object = tf.keras.losses.MeanSquaredError()
-    optimizer = tf.keras.optimizers.Adam(learning_rate=args.rate, ema_momentum=args.momentum)
+    #optimizer = tf.keras.optimizers.Adam(learning_rate=args.rate, ema_momentum=args.momentum)
+    optimizer = tf.keras.optimizers.SGD(learning_rate=args.rate, momentum=args.momentum)
 
     train_loss = tf.keras.metrics.Mean(name='loss')
     # train_accuracy = tf.keras.metrics.SparseCategoricalAccuracy(name='accuracy')
@@ -467,7 +473,7 @@ def main(argv=None):
         for i in freeze:
             model.get_layer(index=i).trainable = False
 
-    if args.debug:
+    if args.debug > 1:
         print(f"Activation function = {activation_function}")
         print("st.dev = {args.random}  rate = {args.rate}  momentum={args.momentum}\n")
         model.summary()
@@ -481,7 +487,6 @@ def main(argv=None):
             print(weights[2 * ii + 1])
 
 # --------------------------- Prepare the Data --------------------------------
-# Needs optimization!!!!!!!
 
     for f in input_files:
         ch.Add(f)
@@ -505,6 +510,8 @@ def main(argv=None):
     if args.debug:
         print(f"Number of events in TChain: {ch.GetEntries():8d}")
 
+# --------------------------- Training --------------------------------
+
     # Allocate space for the Numpy arrays
     ecal_hits = np.zeros([total_number_of_clusters, y_size, x_size, 1], dtype=np.float32)
     ecal_is_fiducial = np.zeros([total_number_of_clusters], dtype=bool)
@@ -513,12 +520,10 @@ def main(argv=None):
     ecal_x = np.zeros([total_number_of_clusters, 2], dtype=np.float32)
     ecal_y = np.zeros([total_number_of_clusters, 2], dtype=np.float32)
 
-# --------------------------- Training --------------------------------
-
     print(f"\nStart training {args.numepocs} epochs with batch size {mini_batch_size} and {args.split} splits")
 
     for i_epoc in range(args.numepocs):
-        event = 0
+        event = args.start
         epoch += 1
 
         train_loss.reset_states()
@@ -531,29 +536,20 @@ def main(argv=None):
                 print(f"[{epoch:2d},{i_split:2d}] ", end="")
             # If we have only one split we do not need to re-load the same data each i_epoc.
             if len(splits) > 0 or i_epoc == 0:
+                if args.debug:
+                    print(f"From event {event:8d}")
                 # Fetch the split worth of data:
                 event = get_data_from_tchain(event, splits_count[i_split], args.cuts, args.mcpart, x_scaling, y_scaling,
                                              args.debug)
-
+                if args.debug:
+                    print(f"To event {event:8d}")
                 # Choose the data_slice, i.e. make a selection of which events we actually use.
                 # An array of ones means all events.
                 # You can also make some cut here, i.e. choose fiducial region only.
-                data_slice = None
-                if args.cuts == 0:
-                    if args.debug > 1:
-                        print("Selected all clusters.")
-                    data_slice = np.ones_like(ecal_is_fiducial)
-                elif args.cuts == 1:
-                    if args.debug > 1:
-                        print("Selected fiducial clusters.")
-                    data_slice = (ecal_is_fiducial == True)
-                elif args.cuts == 2:
-                    if args.debug > 1:
-                        print("Selected anti-fiducial clusters.")
-                    data_slice = (ecal_is_fiducial == False)
-                else:
-                    print("No valid cut selection. Use -c 0, 1 or 2.")
-                    return 1
+
+                if args.debug > 1:
+                    print(f"All clusters: {len(ecal_is_fiducial)}, fiducial: {np.sum(ecal_is_fiducial)} ="
+                          f" {100*np.sum(ecal_is_fiducial)/len(ecal_is_fiducial):5.2f}%")
 
                 # plt.imshow(np.sum(ecal_hits[:10000], axis=0), cmap="YlOrRd")
                 # plt.title("All Ecal hits")
@@ -562,7 +558,7 @@ def main(argv=None):
                 # plt.title("Ecal hits for clusters in slice")
                 # plt.show()
 
-                n_fid_clus = len(ecal_hits[data_slice])
+                n_fid_clus = len(ecal_hits)
                 if args.debug > 1:
                     print(f"Used ECal clusters: {n_fid_clus:d} = {100 * n_fid_clus / len(ecal_hits):4.2f}%, "
                           f"train: {n_training:d}, val: {n_validation:d}")
@@ -570,15 +566,19 @@ def main(argv=None):
                     print(f"We don't have that much data loaded. Load more. {n_training} + {n_training} > {n_fid_clus}")
                     n_training = n_fid_clus * args.train // 100
                     n_validation = n_fid_clus * (100 - args.train) // 100
-                fid_ecal_hits = ecal_hits[data_slice]
-                fid_ecal_truth = ecal_truth[data_slice]
+                fid_ecal_hits = ecal_hits
+                fid_ecal_truth = ecal_truth
                 x_train = fid_ecal_hits[:n_training]
                 y_train = fid_ecal_truth[:n_training, 0:1]
                 x_test = fid_ecal_hits[n_training:n_training + n_validation]
                 y_test = fid_ecal_truth[n_training:n_training + n_validation, 0:1]
 
+            if args.debug > 1:
+                print(f"Training on {len(x_train)} clusters, validating on {len(x_test)} clusters.")
+
             for i in range(len(x_train) // mini_batch_size):
-                if args.debug and i % (len(x_train) // mini_batch_size // 10) == 0:
+                print_freq = (len(x_train) // mini_batch_size // 10)
+                if args.debug and print_freq > 0 and i % print_freq == 0:
                     print(f".", end="", flush=True)
                 train_step(x_train[i * mini_batch_size:(i + 1) * mini_batch_size],
                             y_train[i * mini_batch_size:(i + 1) * mini_batch_size])
@@ -588,7 +588,8 @@ def main(argv=None):
 
             if not args.skipval:
                 for i in range(len(x_test) // mini_batch_size):
-                    if args.debug and  i % (len(x_test) // mini_batch_size // 10) == 0:
+                    print_freq = len(x_test) // mini_batch_size // 10
+                    if args.debug and print_freq > 0 and i % print_freq == 0:
                         print(f"+", end="", flush=True)
                     test_step(x_test[i * mini_batch_size:(i + 1) * mini_batch_size],
                                y_test[i * mini_batch_size:(i + 1) * mini_batch_size])
@@ -596,17 +597,17 @@ def main(argv=None):
             if remainder > 0:
                 train_step(x_test[-remainder:], y_test[-remainder:])
 
-        history['loss'] += [float(train_loss.result().numpy())]
-        history['accuracy'] += [float(train_accuracy.result().numpy())]
-        history['val_loss'] += [float(validation_loss.result().numpy())]
-        history['val_accuracy'] += [float(validation_accuracy.result().numpy())]
-        if args.debug:
-            print(
-                f' Loss: {history["loss"][-1]:10.7f}, '
-                f'Acc: {history["accuracy"][-1] * 100:6.3f}%, '
-                f'Val Loss: {history["val_loss"][-1] :10.7f}, '
-                f'Val Acc: {history["val_accuracy"][-1] * 100:6.3f}%'
-                , flush=True)
+            history['loss'] += [float(train_loss.result().numpy())]
+            history['accuracy'] += [float(train_accuracy.result().numpy())]
+            history['val_loss'] += [float(validation_loss.result().numpy())]
+            history['val_accuracy'] += [float(validation_accuracy.result().numpy())]
+            if args.debug:
+                print(
+                    f' Loss: {history["loss"][-1]:10.7f}, '
+                    f'Acc: {history["accuracy"][-1] * 100:6.3f}%, '
+                    f'Val Loss: {history["val_loss"][-1] :10.7f}, '
+                    f'Val Acc: {history["val_accuracy"][-1] * 100:6.3f}%'
+                    , flush=True)
 
         if args.checkpoint > 0 and epoch % args.checkpoint == 0:
             if args.debug:
@@ -614,7 +615,7 @@ def main(argv=None):
             model.save_weights(checkpoint_path.format(epoch=epoch))
 
     if len(history['loss']) > 0:
-        print("\nFinal values for {epoch} epochs.")
+        print(f"\nFinal values for {epoch} epochs.")
         print(f"Last Loss      : {history['loss'][-1]:12.6g}  Accuracy: {history['accuracy'][-1] * 100:6.3f}%")
         pred_train = model(x_train, training=False)
         loss_train = loss_object(y_train, pred_train)
