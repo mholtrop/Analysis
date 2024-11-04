@@ -11,6 +11,7 @@ ROOT
 *.d
 
 # Notebook checkpoint
+.ipynb_checkpoints
 */.ipynb_checkpoints
 */__pycache__
 
@@ -43,3 +44,7 @@ ROOT
 *.exe
 *.out
 *.app
+
+scratch*
+test*
+Untitled.ipynb

@@ -39,7 +39,7 @@ def main(argv=None):
 
     args = parser.parse_args(argv[1:])
 
-    R.gSystem.Load("lib/libMC2021")
+    R.gSystem.Load("/data/HPS/Analysis/lib/libEcal_Analysis")
     R.gInterpreter.ProcessLine('''auto EAC = Ecal_Analysis_Class();''')  # This is key. It puts the EAC in C++ space.
     print(f"Ecal_Analysis_Class version is {R.EAC.Version()}")
     R.EAC.mc_score_indexes_are_sorted = True
@@ -169,8 +169,8 @@ def main(argv=None):
                     print(f"Warning: Reached maximum number of clusters {mem_space}")
                     break
 
-    print("Create and fill the Dataframe.")
-    panda_df = pd.DataFrame({'evt_num': evt_num[:n_idx], "energy": energy[:n_idx], "x": x[:n_idx], "y": y[:n_idx],
+        print("Create and fill the Dataframe.")
+        panda_df = pd.DataFrame({'evt_num': evt_num[:n_idx], "energy": energy[:n_idx], "x": x[:n_idx], "y": y[:n_idx],
                              "nhits": nhits[:n_idx], "seed_e": seed_e[:n_idx], "seed_ix": seed_ix[:n_idx],
                              "seed_iy": seed_iy[:n_idx], "true_e": true_e[:n_idx], "true_pdg": true_pdg[:n_idx],
                              "true_pdg_purity": true_pdg_purity[:n_idx], "score_e": score_e[:n_idx],
