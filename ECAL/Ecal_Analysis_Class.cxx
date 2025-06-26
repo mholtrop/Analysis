@@ -519,7 +519,8 @@ vector<double> Ecal_Analysis_Class::get_score_secondary_hits_energy(vector<int> 
 double Ecal_Analysis_Class::ecal_xpos_to_index(double xpos) {
    // Return the (double!!!) value of the index  given the x position. This is used to plot on an ix, iy histogram.
    int offset = 0;
-   const vector<double> crystal_pos_x{-298.73819, -282.96774, -267.28214, -251.67653, -236.14636, -220.68710,
+/* OLD values
+ * const vector<double> crystal_pos_x{-298.73819, -282.96774, -267.28214, -251.67653, -236.14636, -220.68710,
                                            -205.29440,
                                            -189.96397, -174.69170, -159.47348, -144.30539, -129.18352, -114.10406,
                                            -99.06329,
@@ -530,6 +531,14 @@ double Ecal_Analysis_Class::ecal_xpos_to_index(double xpos) {
                                            154.44351, 169.41792, 184.42371, 199.46448, 214.54393, 229.66580, 244.83391,
                                            260.05212, 275.32440, 290.65482, 306.04755, 321.50677, 337.03696, 352.64255,
                                            368.32819, 384.09863};
+*/
+
+   const vector<double> crystal_pos_x{
+         -269.08845,-254.57599,-240.15644,-225.82465,-211.57564,-197.40454,-183.30662,-169.27724,-155.31189,-141.40614,
+         -127.55564,-113.75614,-100.00345, -86.29345, -72.62208, -58.98534, -45.37926, -31.79993, -18.24347,  -4.70602,
+         8.81624,  22.32714,  35.83045,  49.52998,  63.03329,  76.54418,  90.06645, 103.60389, 117.16036, 130.73969,
+         144.34576, 157.98250, 171.65387, 185.36387, 199.11656, 212.91606, 226.76656, 240.67232, 254.63767, 268.66704,
+         282.76496, 296.93606, 311.18507, 325.51686, 339.93642, 354.44888};
 
    auto const idx = lower_bound(crystal_pos_x.begin(), crystal_pos_x.end(), xpos);
    if (idx == crystal_pos_x.end()) { return -1.; }
@@ -554,4 +563,99 @@ double Ecal_Analysis_Class::ecal_ypos_to_index(double ypos) {
    }else {
       return 0.9355181571469946 + 0.06659274408814787 * ypos;
    }
+}
+
+double Ecal_Analysis_Class::ecal_xpos_correction_electron(double xpos, double energy){
+   double xCorr;
+   double deltaX;
+
+   double q = ELECTRON_POS_Q_P0 + ELECTRON_POS_Q_P1 * pow(energy, ELECTRON_POS_Q_P2);
+   double m = ELECTRON_POS_M_P0 + ELECTRON_POS_M_P1 * pow(energy, ELECTRON_POS_M_P2);
+
+   deltaX = q + m * xpos;
+   xCorr = xpos - deltaX;
+   return xCorr;
+}
+
+double Ecal_Analysis_Class::ecal_ypos_correction_electron(double ypos, double energy) {
+   double yCorr;
+   double deltaY;
+
+   double q1 = ELECTRON_POS_Q1_P0 + ELECTRON_POS_Q1_P1 * pow(energy, ELECTRON_POS_Q2_P2);
+   double q2 = ELECTRON_POS_Q2_P0 + ELECTRON_POS_Q2_P1 * pow(energy, ELECTRON_POS_Q2_P2);
+   double t = ELECTRON_POS_T_P0 + ELECTRON_POS_T_P1 * pow(energy, ELECTRON_POS_T_P2);
+
+   if (ypos < 0) {
+      deltaY = q1 + t * ypos;
+   } else {
+      deltaY = q2 + t * ypos;
+   }
+
+   yCorr = ypos - deltaY;
+   return yCorr;
+}
+
+double Ecal_Analysis_Class::ecal_xpos_correction_positron(double xpos, double energy) {
+   double xCorr;
+   double deltaX;
+
+   double q = POSITRON_POS_Q_P0 + POSITRON_POS_Q_P1 * pow(energy, POSITRON_POS_Q_P2);
+   double m = POSITRON_POS_M_P0 + POSITRON_POS_M_P1 * pow(energy, POSITRON_POS_M_P2);
+
+   deltaX = q + m * xpos;
+   xCorr = xpos - deltaX;
+
+   return xCorr;
+}
+
+double Ecal_Analysis_Class::ecal_ypos_correction_positron(double ypos, double energy) {
+   double yCorr;
+   double deltaY;
+
+   double q1 = POSITRON_POS_Q1_P0 + POSITRON_POS_Q1_P1 * pow(energy, POSITRON_POS_Q2_P2);
+   double q2 = POSITRON_POS_Q2_P0 + POSITRON_POS_Q2_P1 * pow(energy, POSITRON_POS_Q2_P2);
+   double t = POSITRON_POS_T_P0 + POSITRON_POS_T_P1 * pow(energy, POSITRON_POS_T_P2);
+
+   if (ypos < 0) {
+      deltaY = q1 + t * ypos;
+   } else {
+      deltaY = q2 + t * ypos;
+   }
+
+   yCorr = ypos - deltaY;
+
+   return yCorr;
+}
+
+double Ecal_Analysis_Class::ecal_xpos_correction_photon(double xpos, double energy) {
+   double xCorr;
+   double deltaX;
+
+   double q = PHOTON_POS_Q_P0 + PHOTON_POS_Q_P1 * pow(energy, PHOTON_POS_Q_P2);
+   double m = PHOTON_POS_M_P0 + PHOTON_POS_M_P1 * pow(energy, PHOTON_POS_M_P2);
+
+   deltaX = q + m * xpos;
+
+   xCorr = xpos - deltaX;
+
+   return xCorr;
+}
+
+double Ecal_Analysis_Class::ecal_ypos_correction_photon(double ypos, double energy) {
+   double yCorr;
+   double deltaY;
+
+   double q1 = PHOTON_POS_Q1_P0 + PHOTON_POS_Q1_P1 * pow(energy, PHOTON_POS_Q2_P2);
+   double q2 = PHOTON_POS_Q2_P0 + PHOTON_POS_Q2_P1 * pow(energy, PHOTON_POS_Q2_P2);
+   double t = PHOTON_POS_T_P0 + PHOTON_POS_T_P1 * pow(energy, PHOTON_POS_T_P2);
+
+   if (ypos < 0) {
+      deltaY = q1 + t * ypos;
+   } else {
+      deltaY = q2 + t * ypos;
+   }
+
+   yCorr = ypos - deltaY;
+
+   return yCorr;
 }

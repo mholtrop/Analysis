@@ -66,8 +66,97 @@ public:
    // crystal_offsets = [-2.2223839899158793,-3.4115017022831444,-0.9954516016045554,0.9355181571469946]
    // crystal_factors = [0.06600114645748535,0.06600114778752586,0.0665927423975814,0.06659274408814787]
 
+   // From Andrea Celetano's code in Java: ClusterPositionCorrection2021.java:
+   /**
+   * This uses the corrected cluster energy to correct the position of the
+   * cluster. This is to be used with 2021 data
+         *
+         * To determine these corrections, we simulated e+ e- and gamma at fixed
+         * energies over the ECAL acceptance, sampled the true hit position with MC
+   * scoring plane, and compared with the measured cluster position. We then
+   * considered:
+         *
+               * dX vs X (dX = measured - true) ---> true=measured-dX dY vs Y (dY = measured -
+                                                                                    * true) ---> true=measured-dY
+         *
+         * We then performed a fit to these with dX = q + m*X dY = q1 + t*Y if x < 0 ; =
+   * q2 + t*Y if Y > 0
+   *
+   * See also A.C. Talk at Nov. 2022 collaboration meeting
+   *
+   * We then checked the dependency of the q,m, q1,q2, t parameters as a function
+   * of the energy
+         *
+         * Electrons and Positrons: parameter(E) = p0 + p1*pow(E,p2) for all parameters
+   * Photons: par(E) = p0 + p1*pow(E,p2) | par = q,m par(E) = (a + b*E + c*E*E)/(d
+                                                                                 * + e*E + f*E*E) | par = q1,t,q2
+   **/
+   // Variables for positron position corrections.
+    double  POSITRON_POS_Q_P0{1.35533};
+    double  POSITRON_POS_Q_P1{5.72332};
+    double  POSITRON_POS_Q_P2{-0.541438};
+
+    double  POSITRON_POS_M_P0{-0.0340964};
+    double  POSITRON_POS_M_P1{0.014045};
+    double  POSITRON_POS_M_P2{-0.545433};
+
+    double  POSITRON_POS_Q1_P0{-3.21226};
+    double  POSITRON_POS_Q1_P1{0.339324};
+    double  POSITRON_POS_Q1_P2{-2.72148};
+
+    double  POSITRON_POS_T_P0{-0.0362339};
+    double  POSITRON_POS_T_P1{0.00449926};
+    double  POSITRON_POS_T_P2{-2.91123};
+
+    double  POSITRON_POS_Q2_P0{2.24442};
+    double  POSITRON_POS_Q2_P1{-0.282654};
+    double  POSITRON_POS_Q2_P2{-3.20633};
+
+   // Variables for electron position corrections.
+    double  ELECTRON_POS_Q_P0{5.05789};
+    double  ELECTRON_POS_Q_P1{-7.63708};
+    double  ELECTRON_POS_Q_P2{-0.593751};
+
+    double  ELECTRON_POS_M_P0{-0.0318827};
+    double  ELECTRON_POS_M_P1{0.0100568};
+    double  ELECTRON_POS_M_P2{-0.676475};
+
+    double  ELECTRON_POS_Q1_P0{-2.71442};
+    double  ELECTRON_POS_Q1_P1{-0.456846};
+    double  ELECTRON_POS_Q1_P2{-0.772825};
+
+    double  ELECTRON_POS_T_P0{-0.0275841};
+    double  ELECTRON_POS_T_P1{-0.00844973};
+    double  ELECTRON_POS_T_P2{-0.628533};
+
+    double  ELECTRON_POS_Q2_P0{1.72361};
+    double  ELECTRON_POS_Q2_P1{0.524511};
+    double  ELECTRON_POS_Q2_P2{-0.697755};
+
+   // Variables for photon position corrections.
+    double  PHOTON_POS_Q_P0{5.53107};
+    double  PHOTON_POS_Q_P1{-2.71633};
+    double  PHOTON_POS_Q_P2{-0.157991};
+
+    double  PHOTON_POS_M_P0{-0.0645554};
+    double  PHOTON_POS_M_P1{0.0376413};
+    double  PHOTON_POS_M_P2{-0.119576};
+
+    double  PHOTON_POS_Q1_P0{-3.99615};
+    double  PHOTON_POS_Q1_P1{0.967692};
+    double  PHOTON_POS_Q1_P2{-0.317565};
+
+    double  PHOTON_POS_T_P0{-0.0582419};
+    double  PHOTON_POS_T_P1{0.0247615};
+    double  PHOTON_POS_T_P2{-0.233813};
+
+    double  PHOTON_POS_Q2_P0{3.1551};
+    double  PHOTON_POS_Q2_P1{-1.09655};
+    double  PHOTON_POS_Q2_P2{-0.283272};
+
+
 public:
-   string Version(){ return "V1.0.9";}
+   string Version(){ return "V1.1.0";}
 
    // Note: I tried templating this, with instantiations to make the templates resolve. This works at the root prompt,
    // but in Python it could not resolve the correct template. Given that the RNode is a "wicked" complicated item, we just overload.
@@ -129,6 +218,12 @@ public:
    static double ecal_xpos_to_index(double xpos);
    static double ecal_ypos_to_index(double ypos);
 
+    double ecal_xpos_correction_electron(double xpos, double energy);
+    double ecal_ypos_correction_electron(double ypos, double energy);
+    double ecal_xpos_correction_positron(double xpos, double energy);
+    double ecal_ypos_correction_positron(double ypos, double energy);
+    double ecal_xpos_correction_photon(double xpos, double energy);
+    double ecal_ypos_correction_photon(double ypos, double energy);
 
 ClassDef(Ecal_Analysis_Class, 1)
 };
