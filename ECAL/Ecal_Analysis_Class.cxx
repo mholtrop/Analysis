@@ -12,8 +12,20 @@ RNode Ecal_Analysis_Class::dataframe_for_ml(RNode in) {
 RNode Ecal_Analysis_Class::extend_dataframe(RNode in){
    /// Return a dataframe with additional columns
 
+   // This extension depends on the MC scoring plane in front of the ECAL. Test that these variable are available
+   // in the data frame before continuing, or we get a crash when you try to run this.
+
+   if(!in.HasColumn("mc_score_pz") || !in.HasColumn("mc_score_x") || !in.HasColumn("mc_score_y") ||
+      !in.HasColumn("mc_score_z") || !in.HasColumn("ecal_cluster_x") || !in.HasColumn("ecal_cluster_y")){
+      // Python does not like C++ exceptions.
+      // throw std::runtime_error("Ecal_Analysis_Class::extend_dataframe: The input dataframe does not have the required columns for this extension.");
+      std::cerr << "Ecal_Analysis_Class::extend_dataframe: The input dataframe does not have the required columns for this extension." << std::endl;
+      return in;
+   }
+
+
    // To make use of methods in this class that are *not* static, we need to create some lambda function shims to pass
-   // the mechod as a funcion to the dataframe.
+   // the method as a function to the dataframe.
 
    auto lambda_get_score_cluster_indexes = [this](vector<double> &mc_score_pz,
          vector<double> &mc_score_x, vector<double> &mc_score_y, vector<double> &mc_score_z,
@@ -562,6 +574,26 @@ double Ecal_Analysis_Class::ecal_ypos_to_index(double ypos) {
       return -0.9954516016045554 + 0.0665927423975814 * ypos;
    }else {
       return 0.9355181571469946 + 0.06659274408814787 * ypos;
+   }
+}
+
+double Ecal_Analysis_Class::ecal_xpos_correction(double xpos, double energy, int pdg){
+   if(pdg==11) return ecal_xpos_correction_electron(xpos, energy);
+   else if(pdg== -11) return ecal_xpos_correction_positron(xpos, energy);
+   else if(pdg==22) return ecal_xpos_correction_photon(xpos, energy);
+   else {
+      // printf("ecal_xpos_correction: Unknown PDG code %d, returning original value.\n", pdg);
+      return xpos;
+   }
+}
+
+double Ecal_Analysis_Class::ecal_ypos_correction(double ypos, double energy, int pdg){
+   if(pdg==11) return ecal_ypos_correction_electron(ypos, energy);
+   else if(pdg== -11) return ecal_ypos_correction_positron(ypos, energy);
+   else if(pdg==22) return ecal_ypos_correction_photon(ypos, energy);
+   else {
+      // printf("ecal_ypos_correction: Unknown PDG code %d, returning original value.\n", pdg);
+      return ypos;
    }
 }
 

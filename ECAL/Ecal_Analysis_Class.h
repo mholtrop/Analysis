@@ -156,7 +156,7 @@ public:
 
 
 public:
-   string Version(){ return "V1.1.0";}
+   static const string Version(){ return "V1.1.2";};
 
    // Note: I tried templating this, with instantiations to make the templates resolve. This works at the root prompt,
    // but in Python it could not resolve the correct template. Given that the RNode is a "wicked" complicated item, we just overload.
@@ -218,12 +218,14 @@ public:
    static double ecal_xpos_to_index(double xpos);
    static double ecal_ypos_to_index(double ypos);
 
-    double ecal_xpos_correction_electron(double xpos, double energy);
-    double ecal_ypos_correction_electron(double ypos, double energy);
-    double ecal_xpos_correction_positron(double xpos, double energy);
-    double ecal_ypos_correction_positron(double ypos, double energy);
-    double ecal_xpos_correction_photon(double xpos, double energy);
-    double ecal_ypos_correction_photon(double ypos, double energy);
+   double ecal_xpos_correction(double xpos, double energy, int pdg);
+   double ecal_ypos_correction(double ypos, double energy, int pdg);
+   double ecal_xpos_correction_electron(double xpos, double energy);
+   double ecal_ypos_correction_electron(double ypos, double energy);
+   double ecal_xpos_correction_positron(double xpos, double energy);
+   double ecal_ypos_correction_positron(double ypos, double energy);
+   double ecal_xpos_correction_photon(double xpos, double energy);
+   double ecal_ypos_correction_photon(double ypos, double energy);
 
 ClassDef(Ecal_Analysis_Class, 1)
 };
