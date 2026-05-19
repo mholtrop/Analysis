@@ -18,6 +18,9 @@ ENDIF(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
 
 message("The installation prefix is set to:  ${CMAKE_INSTALL_PREFIX} ")
 
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
+find_package(MiniDST REQUIRED)
+
 #
 # Seem you need to set these (at least both library ones) to get the rdict.pcm and .rootmap files
 # to be installed properly. (?)
@@ -67,6 +70,6 @@ set_target_properties(${PROJECT_NAME} PROPERTIES PUBLIC_HEADER "${Ecal_Analysis_
 
 add_executable(debug_main debug_main.cxx)
 target_include_directories(debug_main PUBLIC /data/HPS/include)
-target_link_libraries(debug_main ${PROJECT_NAME}  -L/data/HPS/lib -lMiniDST)
+target_link_libraries(debug_main ${PROJECT_NAME}  MiniDST::MiniDST)
 
 install(TARGETS ${PROJECT_NAME} DESTINATION ${CMAKE_INSTALL_LIBDIR} PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCDIR} )
