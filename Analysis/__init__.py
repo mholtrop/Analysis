@@ -9,6 +9,7 @@
 __author__ = 'Maurik Holtrop'
 __version__ = '1.0.0'
 
-__all__ = ['ecal']
+__all__ = ['ecal', 'svt_tracking']
 
 from .ecal import ecal
+from . import svt_tracking

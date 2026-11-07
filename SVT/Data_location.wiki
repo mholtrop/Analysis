@@ -1,0 +1,197 @@
+__TOC__
+
+Survey of 2021 (and 2019) HPS data on endeavour, made 2026-11-06.
+
+* '''E''' = <code>/net/data/endeavour2/HPS/physrun2021</code>  (37 TB disk, network)
+* '''F''' = <code>/fast/HPS</code>  (3.6 TB local NVMe on endeavour, fast)
+
+Event counts are the MiniDST/ntuple entries. The detector was read with <code>dumpevent</code> from the first SLCIO file of
+the sample (or the files it was made from). Every MiniDST has a <code>metadata_json</code> object that lists its input SLCIO file(s).
+
+'''SVT column:''' H = SVT hits (<code>svt_hit_*</code>), T = per-hit MC truth (<code>svt_hit_mc_part_idx</code>), R = raw strip hits
+(<code>svt_raw_hit_*</code>, amplitude/t0/χ²), raw = readout-level LCIO, sim = SLIC output, – = no SVT hit branches
+(tracks only).
+
+'''* Detector inferred''' from the pass5_v9 production path in <code>metadata_json</code>: the input SLCIO files are at JLab
+(<code>/lustre24/expphy/cache/hallb/hps/production/...</code>), not on endeavour. "SLAC" = input recon files at SLAC (<code>/sdf/...</code>).
+
+== Home-made MC (erbaz, Oct 2026) — best documented, latest software ==
+
+All in <code>E/home_made_mc/</code>. Each sample has an <code>MC_INFO.md</code> with the full chain, steering, versions and reproduction configs (<code>_config/</code>). 3.74 GeV, run-14272 conditions, local SQLite conditions DB, KF tracking, recon steering <code>PhysicsRun2021MCRecon_KF_WithSpacing_pass5_physics_HitSmear_HitKill_14272</code>. Overlay samples use real 2021 pulser data; no pulser event is shared between samples.
+
+{| class="wikitable sortable"
+! Location !! Content !! Files !! Size (GB) !! Events !! Detector (HPS_Run2021Pass1_…) !! SVT
+|-
+| <code>E/home_made_mc/tritrig_pure_run14272/minidst</code> || Tritrig, '''no background''' (pure) || style="text-align:right" | 474 || style="text-align:right" | 5 || style="text-align:right" | 1.01 M || v9_14272 || H T
+|-
+| <code>E/home_made_mc/tritrig_pure_run14272/minidst_plus</code> || Same events + SVT/ECal/hodo raw hits || style="text-align:right" | 474 || style="text-align:right" | 8 || style="text-align:right" | 1.01 M || v9_14272 || H T R
+|-
+| <code>E/home_made_mc/tritrig_pure_run14272/recon</code> || Recon LCIO (input of the above) || style="text-align:right" | 474 || style="text-align:right" | 17 || style="text-align:right" |  || v9_14272 || H T R
+|-
+| <code>E/home_made_mc/tritrig_pulser_beamspot_run14272/minidst</code> || Tritrig + pulser overlay, beam spot 55×45 µm || style="text-align:right" | 601 || style="text-align:right" | 12 || style="text-align:right" | 0.99 M || v9_14272 || H T
+|-
+| <code>E/home_made_mc/tritrig_pulser_beamspot_run14272/minidst_plus</code> || Same events + raw hits || style="text-align:right" | 601 || style="text-align:right" | 29 || style="text-align:right" | 0.99 M || v9_14272 || H T R
+|-
+| <code>E/home_made_mc/tritrig_pulser_beamspot_run14272/recon</code> || Recon LCIO || style="text-align:right" | 601 || style="text-align:right" | 45 || style="text-align:right" |  || v9_14272 || H T R
+|-
+| <code>E/home_made_mc/tritrig_pulser_beamspot_run14272/readout</code> || Readout LCIO (re-run recon from here) || style="text-align:right" | 601 || style="text-align:right" | 10 || style="text-align:right" |  || v9_14272 || raw
+|-
+| <code>E/home_made_mc/tritrig_pulser_beamspot_run14272/{lhe,conv,mom,rot,sim,filt,overlay,spaced}</code> || All intermediate steps (LHE → SLIC → overlay → spacing) || style="text-align:right" |  || style="text-align:right" | 850 || style="text-align:right" |  || v9_14272 || –
+|-
+| <code>E/home_made_mc/wab_pulser_run14272/minidst</code> || WAB + pulser overlay (also <code>recon/</code>, <code>lhe/</code>) || style="text-align:right" | 720 || style="text-align:right" | 2 || style="text-align:right" | 0.20 M || v9_14272 || H T
+|-
+| <code>E/home_made_mc/ap_pulser_lheuniform_run14272/m*MeV/minidst</code> || A′ + pulser overlay, decay length uniform 0–150 mm; 12 masses 30–200 MeV (all steps kept) || style="text-align:right" | 1,952 || style="text-align:right" | 80 || style="text-align:right" | 6.63 M || v9_14272 || H T
+|-
+| <code>E/home_made_mc/ap_pure_lheuniform_run14272/m*MeV/minidst</code> || A′, no overlay; masses 50, 100, 150, 200 MeV (also <code>recon/</code>) || style="text-align:right" | 962 || style="text-align:right" | 10 || style="text-align:right" | 1.98 M || v9_14272 || H T
+|-
+| <code>E/home_made_mc/pulser_pieces</code> || Pulser data split into ~18k-event pieces, used for the overlays || style="text-align:right" | 3,760 || style="text-align:right" | 601 || style="text-align:right" |  || v9_14272 || raw
+|}
+
+== Other 3.74 GeV MC (pass5 / v9) ==
+
+Older productions; mostly no per-hit SVT truth. Detector from the first SLCIO file.
+
+{| class="wikitable sortable"
+! Location !! Content !! Files !! Size (GB) !! Events !! Detector (HPS_Run2021Pass1_…) !! SVT
+|-
+| <code>F/physrun2021/pass5_v9_mc_rad_readout_recon/minidst</code> || Rad tridents, '''pure''', same recon as tritrig_pure (has <code>MC_INFO.md</code>) || style="text-align:right" | 2,000 || style="text-align:right" | 11 || style="text-align:right" | 2.13 M || v9_14272 || H T
+|-
+| <code>F/physrun2021/pass5_v9_mc_rad_readout_recon/recon</code> || Recon LCIO of the above || style="text-align:right" | 2,000 || style="text-align:right" | 42 || style="text-align:right" |  || v9_14272 || H T R
+|-
+| <code>F/physrun2021/pass5_v9_mc/rad_readout_slic</code> || SLIC output (input of the above, 20M events) || style="text-align:right" | 2,000 || style="text-align:right" | 95 || style="text-align:right" |  || v9_14272 || sim
+|-
+| <code>E/3pt74_MC/tritrig_pulser_newmdst/mdst</code> || Tritrig + pulser (also <code>slcio/</code>) || style="text-align:right" | 100 || style="text-align:right" | 24 || style="text-align:right" | 1.78 M || v9_14272 || H
+|-
+| <code>E/3pt74_MC/tritrig_pulser</code> || Tritrig + pulser, old MiniDST (<code>*.minidst</code>) || style="text-align:right" | 89 || style="text-align:right" | 19 || style="text-align:right" | 1.55 M || ? || H
+|-
+| <code>E/3pt74_MC/rad_pulser/mdst</code> || Rad + pulser, hit smear/kill (SLAC; also <code>slcio/</code>) || style="text-align:right" | 800 || style="text-align:right" | 49 || style="text-align:right" | 4.26 M || v9_14272 || H
+|-
+| <code>E/3pt74_MC/wab_pulser/mdst</code> || WAB + pulser (also <code>slcio/</code>) || style="text-align:right" | 200 || style="text-align:right" | 3 || style="text-align:right" | 0.23 M || v9_14272 || H
+|-
+| <code>E/3pt74_MC/bh_pulser/mdst</code> || Bethe–Heitler + pulser (also <code>slcio/</code>) || style="text-align:right" | 11 || style="text-align:right" | 2 || style="text-align:right" | 0.21 M || v8beta_template || H
+|-
+| <code>E/3pt74_MC/ap_pulser_truth_matched_mdst</code> || A′ 120 MeV + pulser (same events as <code>ap_pulser_mdst_new</code>, <code>ap_pulser</code>) || style="text-align:right" | 200 || style="text-align:right" | 36 || style="text-align:right" | 3.02 M || v9_14272 || H T
+|-
+| <code>E/3pt74_MC/ap_pulser_120MEV_slcio</code> || Recon LCIO of the A′ 120 MeV sample || style="text-align:right" | 200 || style="text-align:right" | 148 || style="text-align:right" |  || v9_14272 || H T R
+|-
+| <code>E/3pt74_MC/ap_prompt_pulser</code> || Prompt A′ 120 MeV + pulser (SLAC) || style="text-align:right" | 40 || style="text-align:right" | 91 || style="text-align:right" | 6.24 M || v9_14272 || H
+|-
+| <code>E/3pt74_MC/ap_nooverlay/100MEV_mdst</code> || A′ 100 MeV, no overlay (also <code>100MEV_slcio</code>) || style="text-align:right" | 194 || style="text-align:right" | 1 || style="text-align:right" | 0.25 M || v9_14596 || H T
+|-
+| <code>E/3pt74_latest_ML/tritrig_pure/mdst</code> || Tritrig pure, for ML (also <code>slcio/</code>) || style="text-align:right" | 125 || style="text-align:right" | 1.0 || style="text-align:right" | 0.21 M || v8beta_template || H T
+|-
+| <code>E/MC_test/minidst/tritrig_pulser/pass5_v9/*</code> || Tritrig + pulser, hit smear/kill (<code>readout/</code>, <code>recon/</code> LCIO alongside) || style="text-align:right" | 751 || style="text-align:right" | 16 || style="text-align:right" | 1.33 M || v9_14272 || H
+|-
+| <code>E/MC_test/slic</code> || Tritrig SLIC output || style="text-align:right" | 7,999 || style="text-align:right" | 337 || style="text-align:right" |  || v9_14272 || sim
+|-
+| <code>E/MC_test/pulser</code> || 2021 pulser data (run 14275) in LCIO: the overlay source || style="text-align:right" | 526 || style="text-align:right" | 841 || style="text-align:right" |  || v9_14272 || raw
+|-
+| <code>E/MC_test/run_beam/minidst</code> || Beam-on-target background test (nearly empty: <1 SVT hit/event) || style="text-align:right" | 62 || style="text-align:right" | 0.3 || style="text-align:right" | 0.62 M || v9_14185 || H T
+|-
+| <code>E/moller_mc</code> || Møller MC, 1.92 GeV (pure / pulser, smearing tests; SLAC) || style="text-align:right" | 105 || style="text-align:right" | 21 || style="text-align:right" | 3.64 M || ? || H
+|}
+
+== Pass6 (v10-dev) MC ==
+
+SLAC production (M. Graham), low-p tracking (<code>pass6dev_lowp</code>). <code>README.md</code> in <code>tritrig_pulser_readout/</code>.
+
+{| class="wikitable sortable"
+! Location !! Content !! Files !! Size (GB) !! Events !! Detector (HPS_Run2021Pass1_…) !! SVT
+|-
+| <code>E/pass6_v10/mc/tritrig_pulser/mdst</code> || Tritrig + pulser (also <code>slcio/</code>) || style="text-align:right" | 625 || style="text-align:right" | 16 || style="text-align:right" | 1.14 M || v10-dev_14272 || H T
+|-
+| <code>E/pass6_v10/mc/tritrig_pulser_readout</code> || Readout LCIO (re-run recon from here) || style="text-align:right" | 125 || style="text-align:right" | 2 || style="text-align:right" |  || v10-dev_14272 || raw
+|-
+| <code>E/pass6_v10/mc/tritrig_3track/mdst</code> || Tritrig 3-track selection (also <code>slcio/</code>, hpstr <code>tuple/</code>) || style="text-align:right" | 125 || style="text-align:right" | 3 || style="text-align:right" | 0.23 M || v10-dev_14272 || H T
+|-
+| <code>E/pass6_v10/mc/ap_pulser/120MeV/mdst</code> || A′ 120 MeV + pulser (also <code>slcio/</code>) || style="text-align:right" | 10 || style="text-align:right" | 2 || style="text-align:right" | 0.15 M || v10-dev_14272 || H T
+|-
+| <code>E/pass6_v10/mc/*moller*</code> || Møller MC tests (1.92 GeV) || style="text-align:right" | 3 || style="text-align:right" | 7 || style="text-align:right" | 0.36 M || v9_1pt92GeV_14629 || H T
+|}
+
+== 1.92 GeV MC ==
+
+{| class="wikitable sortable"
+! Location !! Content !! Files !! Size (GB) !! Events !! Detector (HPS_Run2021Pass1_…) !! SVT
+|-
+| <code>E/1pt92_MC/tritrig</code> || Tritrig + pulser (SLAC pass5_v9_1pt92GeV) || style="text-align:right" | 100 || style="text-align:right" | 0.6 || style="text-align:right" | 0.08 M || v9_1pt92GeV_14629 || H
+|-
+| <code>E/1pt92_MC/tritrig_singles</code> || Tritrig + pulser, singles trigger (SLAC) || style="text-align:right" | 100 || style="text-align:right" | 5 || style="text-align:right" | 0.50 M || v9_1pt92GeV_14629 || H
+|-
+| <code>E/1pt92_MC/wab</code> || WAB + pulser (SLAC) || style="text-align:right" | 100 || style="text-align:right" | 0.6 || style="text-align:right" | 0.09 M || v9_1pt92GeV_14629 || H
+|}
+
+== Data, 3.74 GeV ==
+
+Pass5_v9 unless noted. In pass5_v9 data the tracks point to <code>svt_hit_type</code> 0 (1 in MC and pass5_v10).
+
+{| class="wikitable sortable"
+! Location !! Content !! Files !! Size (GB) !! Events !! Detector (HPS_Run2021Pass1_…) !! SVT
+|-
+| <code>E/5percent/pass5_v9_unskimmed</code> || '''Unskimmed''', 14 runs 14185–14337 || style="text-align:right" | 410 || style="text-align:right" | 468 || style="text-align:right" | 57.35 M || v9_&lt;run&gt; * || H
+|-
+| <code>E/hps_014229_noskim_mdst</code> || Unskimmed, run 14229 || style="text-align:right" | 45 || style="text-align:right" | 53 || style="text-align:right" | 6.47 M || v9_14229 * || H
+|-
+| <code>F/physrun2021/pass5_v10_test</code> || Run 14185 unskimmed, '''pass5_v9 and pass5_v10''' of the same files (12 + 12) || style="text-align:right" | 24 || style="text-align:right" | 29 || style="text-align:right" | 3.74 M || v9 / v10 * || H
+|-
+| <code>E/5percent/physics</code> || 5 % sample, 74 runs (identical copy in <code>F/physrun2021/5percent</code>) || style="text-align:right" | 496 || style="text-align:right" | 320 || style="text-align:right" | 115.08 M || v9_&lt;run&gt; * || –
+|-
+| <code>E/5percent/physics_newMDST</code> || 5 % v0 skim, 58 runs, newer MiniDST || style="text-align:right" | 967 || style="text-align:right" | 678 || style="text-align:right" | 235.65 M || v9_&lt;run&gt; * || –
+|-
+| <code>E/5percent/physics_trackZ0Test</code> || 5 % v0 skim, 188 runs, track z0 test || style="text-align:right" | 296 || style="text-align:right" | 155 || style="text-align:right" | 53.42 M || v9_&lt;run&gt; * || –
+|-
+| <code>E/5percent/hps_14231</code> || Run 14231 (also <code>hps_14231_recon/</code> v0 skim: slcio, mdst, hpstr) || style="text-align:right" | 53 || style="text-align:right" | 41 || style="text-align:right" | 13.76 M || v9_14231 || –
+|-
+| <code>E/FEE</code> || FEE skim, runs 14271 and 14153 (PIN) || style="text-align:right" | 442 || style="text-align:right" | 124 || style="text-align:right" | 74.88 M || ? || –
+|-
+| <code>E/3pt74_latest_ML/data/mdst/hps_014271</code> || Run 14271 v0 skim (also <code>slcio/</code>) || style="text-align:right" | 52 || style="text-align:right" | 25 || style="text-align:right" | 8.11 M || v9_14271 || –
+|-
+| <code>E/pass6_v10/data/3pt74/mdst</code> || Pass6 v0 skim, runs 14185, 14222, 14520, 14750 (also <code>slcio/</code>) || style="text-align:right" | 85 || style="text-align:right" | 11 || style="text-align:right" | 2.13 M || v10-dev_14185 || –
+|-
+| <code>F/physrun2021/new_dst</code> || Run 14476 v0 skim || style="text-align:right" | 145 || style="text-align:right" | 11 || style="text-align:right" | 3.65 M || v9_14476 * || –
+|}
+
+== Data, 1.92 GeV ==
+
+{| class="wikitable sortable"
+! Location !! Content !! Files !! Size (GB) !! Events !! Detector (HPS_Run2021Pass1_…) !! SVT
+|-
+| <code>E/1pt92_unskimmed_data</code> || Unskimmed, run 14629 || style="text-align:right" | 51 || style="text-align:right" | 46 || style="text-align:right" | 8.83 M || v9_1pt92GeV_14629 * || H
+|-
+| <code>E/mollers_newMDST</code> || Møller skim, 18 runs 14628–14673 || style="text-align:right" | 235 || style="text-align:right" | 65 || style="text-align:right" | 23.50 M || v9_1pt92GeV_&lt;run&gt; * || –
+|-
+| <code>E/pass6_v10/data/1pt92/mdst</code> || Pass6 Møller skim, 18 runs 14628–14673 (also <code>slcio/</code>, no SVT hits) || style="text-align:right" | 603 || style="text-align:right" | 32 || style="text-align:right" | 8.63 M || v9_1pt92GeV_&lt;run&gt; || –
+|}
+
+== hpstr ntuples ==
+
+Tree <code>HPS_Event</code> unless noted.
+
+{| class="wikitable sortable"
+! Location !! Content !! Files !! Size (GB) !! Events !! Detector (HPS_Run2021Pass1_…) !! SVT
+|-
+| <code>E/hpstr/pass5_v9_preselected_data</code> || Data, vertex preselection (tree <code>preselection</code>), 87 runs || style="text-align:right" | 142 || style="text-align:right" | 25 || style="text-align:right" | 33.04 M || v9_&lt;run&gt; * || –
+|-
+| <code>E/hpstr/tritrig_mc_hitsmearKill</code> || Tritrig + pulser || style="text-align:right" | 11 || style="text-align:right" | 16 || style="text-align:right" | 0.98 M || v9_14272 || –
+|-
+| <code>E/3pt74_MC/hpstr</code> || Tritrig and WAB + pulser (also subdirs) || style="text-align:right" | 56 || style="text-align:right" | 63 || style="text-align:right" | 4.14 M || v9_14272 || –
+|-
+| <code>E/3pt74_MC/ap_pulser_120MeV_hpstr</code> || A′ 120 MeV + pulser || style="text-align:right" | 201 || style="text-align:right" | 98 || style="text-align:right" | 6.05 M || v9_14272 || –
+|}
+
+== 2019 data ==
+
+{| class="wikitable sortable"
+! Location !! Content !! Files !! Size (GB) !! Events !! Detector (HPS_Run2021Pass1_…) !! SVT
+|-
+| <code>F/physrun2019/fee</code> || 2019 FEE, runs 10049, 10050 (pass0.0) || style="text-align:right" | 32 || style="text-align:right" | 8 || style="text-align:right" | 3.71 M || (2019) || –
+|}
+
+== Notes ==
+
+* Every MiniDST has tree <code>MiniDST</code>. <code>svt_hit_type</code> 0 and 1 are identical copies; tracks point to 1 in MC and pass5_v10, to 0 in pass5_v9 data.
+* Pass6 data skims (<code>pass6_v10/data</code>) have no SVT hit collections, even in their LCIO files.
+* Some overlay files lack the pulser SVT data for many events (e.g. A′ m105MeV file 0001): check the per-file mean SVT occupancy (~140 hits/event) first.
+* <code>E/MC_test/run_beam*</code> is a beam-background MC test that is nearly empty; <code>E/MC_test/run_beam/work</code> holds ~140 GB of job scratch.
+* <code>F/physrun2021/5percent</code> is a copy of <code>E/5percent/physics</code> (same files and size).
+* Tools: <code>dumpevent <file> <n></code>, <code>lcio_event_counter</code>, <code>make_mini_dst</code> in <code>/net/home/maurik/AlmaLinux/bin</code>.
